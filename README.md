@@ -4,6 +4,7 @@
 
 ## Team
 - Nikita Chernevskiy
+- Roberto Myftaraga
 - *(add teammates here)*
 
 ## Tech Stack
