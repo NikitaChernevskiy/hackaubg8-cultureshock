@@ -11,6 +11,7 @@ from app.models.alerts import Alert
 from app.models.common import Location
 from app.providers.base import AlertProvider
 from app.providers.eonet_alerts import EONETAlertProvider
+from app.providers.fcdo_alerts import FCDOAlertProvider
 from app.providers.reliefweb_alerts import ReliefWebAlertProvider
 from app.providers.usgs_alerts import USGSAlertProvider
 
@@ -25,6 +26,7 @@ class MultiAlertProvider(AlertProvider):
             USGSAlertProvider(),       # Earthquakes (USGS + GDACS)
             EONETAlertProvider(),      # Wildfires, volcanoes, storms (NASA)
             ReliefWebAlertProvider(),  # Conflicts, humanitarian crises (UN OCHA)
+            FCDOAlertProvider(),       # Geopolitical travel advisories (UK gov)
         ]
 
     async def get_alerts(self, location: Location, radius_km: float = 500) -> list[Alert]:
