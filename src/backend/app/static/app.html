@@ -95,13 +95,17 @@ function initMap(){
   userMarker.bindPopup('<b>You are here</b>').openPopup();
 }
 
-function clearMarkers(){
+let dangerZones=[];
+
+function clearAlertMarkers(){
   alertMarkers.forEach(m=>M.removeLayer(m));alertMarkers=[];
+}
+function clearRoute(){
   if(safeMarker){M.removeLayer(safeMarker);safeMarker=null;}
   if(routeLine){M.removeLayer(routeLine);routeLine=null;}
+  dangerZones.forEach(z=>M.removeLayer(z));dangerZones=[];
 }
-
-let dangerZones=[];
+function clearMarkers(){clearAlertMarkers();clearRoute();}
 
 function renderDecision(d){
   const u=d.urgency||'LOW';
@@ -127,9 +131,7 @@ async function fetchRouteToSafety(fromLat, fromLon){
 }
 
 async function drawRoute(fromLat, fromLon, dest){
-  if(safeMarker){M.removeLayer(safeMarker);safeMarker=null;}
-  if(routeLine){M.removeLayer(routeLine);routeLine=null;}
-  dangerZones.forEach(z=>M.removeLayer(z));dangerZones=[];
+  clearRoute();
 
   const toLat=dest.location.latitude, toLon=dest.location.longitude;
   const dist=dest.distance_km||0;
@@ -139,10 +141,12 @@ async function drawRoute(fromLat, fromLon, dest){
     icon:L.divIcon({className:'',html:'<div style="background:#22c55e;color:#fff;padding:6px 10px;border-radius:8px;font-size:12px;font-weight:800;white-space:nowrap;box-shadow:0 2px 12px #0006">'+dest.name.substring(0,30)+'<br><span style="font-weight:400;font-size:10px">'+dist+'km away</span></div>',iconSize:[0,0],iconAnchor:[-5,15]})
   }).addTo(M);
 
-  // Mark danger zones from alert markers
+  // Mark danger zones from alert markers (persistent, not cleared by route redraw)
+  dangerZones.forEach(z=>M.removeLayer(z));dangerZones=[];
   alertMarkers.forEach(m=>{
+    if(!m.getLatLng)return;
     const ll=m.getLatLng();
-    const dz=L.circle([ll.lat,ll.lng],{radius:5000,color:'#ef4444',fillColor:'#ef4444',fillOpacity:0.08,weight:1,dashArray:'4,4'}).addTo(M);
+    const dz=L.circle([ll.lat,ll.lng],{radius:8000,color:'#ef4444',fillColor:'#ef4444',fillOpacity:0.1,weight:1.5,dashArray:'6,4'}).addTo(M);
     dangerZones.push(dz);
   });
 
@@ -170,7 +174,7 @@ async function drawRoute(fromLat, fromLon, dest){
 }
 
 async function renderAlerts(alerts){
-  clearMarkers();
+  clearAlertMarkers();
   alerts.slice(0,20).forEach(a=>{
     if(!a.location)return;
     const color=a.severity==='critical'?'#ef4444':a.severity==='high'?'#f59e0b':'#eab308';
@@ -184,14 +188,20 @@ async function renderAlerts(alerts){
 }
 
 async function go(){
+  let decision=null;
   try{
     const r=await fetch(A+'/decision',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({latitude:lat,longitude:lon})});
-    renderDecision(await r.json());
-  }catch(e){document.getElementById('itxt').textContent='OFFLINE — call emergency services.';}
+    decision=await r.json();
+  }catch(e){document.getElementById('itxt').textContent='OFFLINE — use cached data.';}
+  // Draw alerts FIRST (so danger zones can use them)
   try{
     const r=await fetch(A+'/alerts/region/'+lat+'/'+lon+'?radius_km=500');
-    renderAlerts((await r.json()).alerts||[]);
+    await renderAlerts((await r.json()).alerts||[]);
   }catch(e){}
+  // THEN render decision + route (after alert markers exist)
+  if(decision){
+    renderDecision(decision);
+  }
 }
 
 async function sim(s,btn){
