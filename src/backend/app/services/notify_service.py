@@ -104,8 +104,13 @@ async def send_alert_sms(
     instruction: str,
     map_url: str,
     emergency_number: str,
+    briefing: str = "",
 ) -> bool:
-    """Send SMS via Twilio."""
+    """Send SMS via Twilio.
+
+    This message may be the user's LAST communication if internet goes down.
+    Include the full AI briefing, not just the action instruction.
+    """
     settings = get_settings()
     if not settings.twilio_account_sid or not settings.twilio_from_number:
         logger.warning("Twilio SMS not configured, skipping SMS to %s", to_phone)
@@ -114,8 +119,18 @@ async def send_alert_sms(
     try:
         import httpx
 
-        # SMS body — concise, actionable
-        body = f"AMYGDALA: {instruction[:100]}\nMap: {map_url}\nEmergency: {emergency_number}"
+        # Full SMS — this could be the last message they receive
+        lines = [
+            f"AMYGDALA ALERT: {instruction}",
+            "",
+        ]
+        if briefing:
+            lines.append(f"{briefing[:600]}")
+            lines.append("")
+        lines.append(f"[AI-generated advisory — verify with local authorities]")
+        lines.append(f"Map: {map_url}")
+        lines.append(f"Emergency: {emergency_number}")
+        body = "\n".join(lines)
 
         async with httpx.AsyncClient() as client:
             resp = await client.post(

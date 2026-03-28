@@ -202,13 +202,14 @@ async def check_and_notify_user(user: RegisteredUser) -> dict:
             country_name=user.destination_name or country["name"],
         )
 
-    # Send SMS
+    # Send SMS (includes full AI briefing — may be user's last message)
     if user.phone:
         result["sms_sent"] = await send_alert_sms(
             to_phone=user.phone,
             instruction=instruction,
             map_url=map_url,
             emergency_number=decision.local_emergency_number,
+            briefing=situation_briefing,
         )
 
     # Log to admin panel

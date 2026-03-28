@@ -1,152 +1,310 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Amygdala — Admin Panel</title>
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
-:root{--bg:#0b0b12;--card:#12121c;--brd:#1e1e30;--t:#e4e4ef;--m:#6b6b85;--acc:#6366f1;--red:#ef4444;--org:#f59e0b;--grn:#22c55e}
-body{font-family:-apple-system,sans-serif;background:var(--bg);color:var(--t);min-height:100vh}
-.top{padding:16px 24px;border-bottom:1px solid var(--brd);display:flex;align-items:center;justify-content:space-between}
-.top h1{font-size:18px;font-weight:800}.top h1 b{color:var(--acc)}
-.top .badge{font-size:10px;background:var(--acc);color:#fff;padding:3px 10px;border-radius:20px;font-weight:700}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;padding:20px 24px}
-.stat{background:var(--card);border:1px solid var(--brd);border-radius:12px;padding:18px}
-.stat .label{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--m);font-weight:700;margin-bottom:6px}
-.stat .val{font-size:28px;font-weight:800}
-.stat .sub{font-size:11px;color:var(--m);margin-top:4px}
-.stat.green .val{color:var(--grn)}.stat.red .val{color:var(--red)}.stat.org .val{color:var(--org)}.stat.acc .val{color:var(--acc)}
-.section{padding:0 24px 20px}
-.section h2{font-size:13px;text-transform:uppercase;letter-spacing:.5px;color:var(--m);font-weight:700;padding:16px 0 10px}
-table{width:100%;border-collapse:collapse;font-size:12px}
-th{text-align:left;padding:8px 10px;background:var(--card);color:var(--m);font-size:10px;text-transform:uppercase;letter-spacing:.5px;font-weight:700;border-bottom:1px solid var(--brd)}
-td{padding:8px 10px;border-bottom:1px solid var(--brd)}
-tr:hover{background:var(--card)}
-.tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700}
-.tag.ok{background:#22c55e22;color:var(--grn)}.tag.fail{background:#ef444422;color:var(--red)}
-.tag.high{background:#ef444422;color:var(--red)}.tag.medium{background:#f59e0b22;color:var(--org)}.tag.low{background:#22c55e22;color:var(--grn)}
-.sources{display:flex;flex-wrap:wrap;gap:6px;padding:0 24px 20px}
-.src{padding:6px 12px;background:var(--card);border:1px solid var(--brd);border-radius:8px;font-size:11px;font-weight:600}
-.src .dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--grn);margin-right:6px}
-.refresh{padding:6px 14px;background:var(--card);border:1px solid var(--brd);border-radius:8px;color:var(--t);font-size:11px;cursor:pointer;font-family:inherit;font-weight:600}
-.refresh:active{opacity:.7}
-.empty{text-align:center;padding:40px;color:var(--m);font-size:13px}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Amygdala — Risk Manager Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&family=JetBrains+Mono:wght@500&display=swap');
+        
+        :root {
+            --bg: #020617;
+            --card: #0f172a;
+            --card-hover: #1e293b;
+            --border: #1e293b;
+            --accent: #ef4444;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .glass-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 1.25rem;
+            transition: all 0.2s ease;
+        }
+
+        .stat-value {
+            font-size: 2.25rem;
+            line-height: 2.5rem;
+            font-weight: 900;
+            letter-spacing: -0.025em;
+            font-style: italic;
+        }
+
+        .status-pill {
+            padding: 2px 10px;
+            border-radius: 9999px;
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .mono { font-family: 'JetBrains Mono', monospace; }
+
+        .table-container {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 1.25rem;
+            overflow: hidden;
+        }
+
+        table { width: 100%; border-collapse: separate; border-spacing: 0; }
+        th { 
+            background: #1e293b66; 
+            color: var(--text-muted); 
+            font-weight: 800; 
+            font-size: 10px; 
+            text-transform: uppercase; 
+            letter-spacing: 0.1em;
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--border);
+            text-align: left;
+        }
+        td { 
+            padding: 14px 16px; 
+            border-bottom: 1px solid #1e293b44; 
+            font-size: 13px;
+        }
+        tr:last-child td { border-bottom: none; }
+        tr:hover td { background: rgba(255,255,255,0.02); }
+        
+        .gradient-accent {
+            background: linear-gradient(135deg, #ef4444 0%, #991b1b 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .refresh-btn {
+            background: var(--card);
+            border: 1px solid var(--border);
+            padding: 8px 16px;
+            border-radius: 0.75rem;
+            font-weight: 700;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+        .refresh-btn:hover { background: #334155; transform: translateY(-1px); }
+    </style>
 </head>
-<body>
-<div class="top">
-  <h1>Amyg<b>dala</b> — Risk Manager</h1>
-  <div style="display:flex;gap:8px;align-items:center">
-    <span class="badge">ADMIN</span>
-    <button class="refresh" onclick="load()">↻ Refresh</button>
-  </div>
-</div>
+<body class="p-6 lg:p-10">
 
-<div class="grid" id="stats">
-  <div class="stat acc"><div class="label">Registered Users</div><div class="val" id="s-users">-</div></div>
-  <div class="stat green"><div class="label">Alerts Sent</div><div class="val" id="s-sent">-</div><div class="sub" id="s-rate">-</div></div>
-  <div class="stat org"><div class="label">Success Rate</div><div class="val" id="s-success">-</div></div>
-  <div class="stat red"><div class="label">Failed</div><div class="val" id="s-failed">-</div></div>
-  <div class="stat green"><div class="label">Est. Savings (USD)</div><div class="val" id="s-savings">-</div><div class="sub" id="s-roi">-</div></div>
-  <div class="stat acc"><div class="label">Data Sources</div><div class="val" id="s-sources">7</div><div class="sub">All real-time, all free</div></div>
-</div>
+    <header class="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
+        <div>
+            <div class="flex items-center gap-3 mb-2">
+                <div class="bg-red-600 p-2 rounded-xl">
+                    <i class="fas fa-brain text-white text-sm"></i>
+                </div>
+                <h1 class="text-2xl font-black italic uppercase tracking-tighter">
+                    Amyg<span class="gradient-accent">dala</span>
+                </h1>
+                <span class="bg-white/5 border border-white/10 px-3 py-1 rounded-full text-[10px] font-black uppercase text-red-500 tracking-widest">Risk Manager</span>
+            </div>
+            <p class="text-slate-400 text-xs font-medium uppercase tracking-widest">System Architecture: <span class="text-slate-200">Distributed-B2B</span></p>
+        </div>
+        <button class="refresh-btn" onclick="load()">
+            <i class="fas fa-sync-alt text-[10px]"></i> RELOAD TELEMETRY
+        </button>
+    </header>
 
-<div class="section">
-  <h2>Channel Breakdown</h2>
-  <div class="grid" style="padding:0" id="channels"></div>
-</div>
+    <main class="max-w-7xl mx-auto space-y-10">
+        
+        <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" id="stats">
+            <div class="glass-card p-6 border-l-4 border-l-indigo-500">
+                <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Registered Users</p>
+                <div class="stat-value" id="s-users">-</div>
+            </div>
+            <div class="glass-card p-6 border-l-4 border-l-red-500">
+                <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Total Sent</p>
+                <div class="stat-value" id="s-sent">-</div>
+                <div class="mt-2 text-[10px] font-bold text-slate-400 uppercase" id="s-rate">-</div>
+            </div>
+            <div class="glass-card p-6 border-l-4 border-l-orange-500">
+                <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Success Rate</p>
+                <div class="stat-value" id="s-success">-</div>
+            </div>
+            <div class="glass-card p-6 border-l-4 border-l-green-500">
+                <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Est. Savings (USD)</p>
+                <div class="stat-value text-green-500" id="s-savings">-</div>
+                <div class="mt-1 text-[10px] font-bold text-slate-400 uppercase" id="s-roi">-</div>
+            </div>
+        </section>
 
-<div class="section">
-  <h2>Data Sources Status</h2>
-</div>
-<div class="sources" id="srcList"></div>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="lg:col-span-2 space-y-10">
+                
+                <section>
+                    <div class="flex items-center justify-between px-2 mb-4">
+                        <h2 class="text-xs font-black uppercase tracking-[0.2em] text-slate-500">Recent Notifications</h2>
+                        <div class="h-px bg-slate-800 flex-grow mx-4"></div>
+                    </div>
+                    <div class="table-container shadow-2xl">
+                        <div class="overflow-x-auto">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Time</th>
+                                        <th>User</th>
+                                        <th>Alert Intel</th>
+                                        <th>Urgency</th>
+                                        <th>Channel</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="logBody" class="text-slate-300">
+                                    <tr><td colspan="6" class="text-center py-10 text-slate-500 italic">No activity yet.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
 
-<div class="section">
-  <h2>Notification Log</h2>
-  <div style="overflow-x:auto">
-    <table>
-      <thead><tr><th>Time</th><th>User</th><th>Alert</th><th>Decision</th><th>Urgency</th><th>Channel</th><th>Status</th></tr></thead>
-      <tbody id="logBody"><tr><td colspan="7" class="empty">No notifications yet. Create a manual alert to test.</td></tr></tbody>
-    </table>
-  </div>
-</div>
+                <section>
+                    <div class="flex items-center justify-between px-2 mb-4">
+                        <h2 class="text-xs font-black uppercase tracking-[0.2em] text-slate-500">User Registry</h2>
+                        <div class="h-px bg-slate-800 flex-grow mx-4"></div>
+                    </div>
+                    <div class="table-container shadow-2xl">
+                        <div class="overflow-x-auto">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>User ID</th>
+                                        <th>Destination</th>
+                                        <th>Active Channels</th>
+                                        <th>Hits</th>
+                                        <th>Member Since</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="userBody" class="text-slate-300">
+                                    <tr><td colspan="5" class="text-center py-10 text-slate-500 italic">No registered users found.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+            </div>
 
-<div class="section">
-  <h2>Registered Users</h2>
-  <div style="overflow-x:auto">
-    <table>
-      <thead><tr><th>ID</th><th>Email</th><th>Channels</th><th>Notifications</th><th>Registered</th></tr></thead>
-      <tbody id="userBody"><tr><td colspan="5" class="empty">No users registered yet.</td></tr></tbody>
-    </table>
-  </div>
-</div>
+            <aside class="space-y-10">
+                <div>
+                    <h2 class="text-xs font-black uppercase tracking-[0.2em] text-slate-500 mb-4 px-2">Channel Distribution</h2>
+                    <div class="grid grid-cols-2 gap-3" id="channels"></div>
+                </div>
 
-<script>
-const A=window.location.origin+'/api/v1';
+                <div>
+                    <h2 class="text-xs font-black uppercase tracking-[0.2em] text-slate-500 mb-4 px-2">Data Sources Status</h2>
+                    <div class="grid grid-cols-1 gap-2 px-2">
+                        <div class="bg-slate-800/50 border border-slate-700 px-4 py-3 rounded-xl flex items-center justify-between">
+                            <span class="text-[11px] font-bold text-slate-200">USGS</span>
+                            <span class="h-2 w-2 bg-green-500 rounded-full shadow-[0_0_8px_rgba(34,197,94,0.6)]"></span>
+                        </div>
+                        <div class="bg-slate-800/50 border border-slate-700 px-4 py-3 rounded-xl flex items-center justify-between">
+                            <span class="text-[11px] font-bold text-slate-200">GDACS</span>
+                            <span class="h-2 w-2 bg-green-500 rounded-full shadow-[0_0_8px_rgba(34,197,94,0.6)]"></span>
+                        </div>
+                        <div class="bg-slate-800/50 border border-slate-700 px-4 py-3 rounded-xl flex items-center justify-between">
+                            <span class="text-[11px] font-bold text-slate-200">NASA EONET</span>
+                            <span class="h-2 w-2 bg-green-500 rounded-full shadow-[0_0_8px_rgba(34,197,94,0.6)]"></span>
+                        </div>
+                        <div class="bg-slate-800/50 border border-slate-700 px-4 py-3 rounded-xl flex items-center justify-between">
+                            <span class="text-[11px] font-bold text-slate-200">UK FCDO</span>
+                            <span class="h-2 w-2 bg-green-500 rounded-full shadow-[0_0_8px_rgba(34,197,94,0.6)]"></span>
+                        </div>
+                        <div class="bg-slate-800/50 border border-slate-700 px-4 py-3 rounded-xl flex items-center justify-between">
+                            <span class="text-[11px] font-bold text-slate-200">METEOALARM</span>
+                            <span class="h-2 w-2 bg-green-500 rounded-full shadow-[0_0_8px_rgba(34,197,94,0.6)]"></span>
+                        </div>
+                        <div class="bg-slate-800/50 border border-slate-700 px-4 py-3 rounded-xl flex items-center justify-between">
+                            <span class="text-[11px] font-bold text-slate-200">RELIEFWEB</span>
+                            <span class="h-2 w-2 bg-green-500 rounded-full shadow-[0_0_8px_rgba(34,197,94,0.6)]"></span>
+                        </div>
+                        <div class="bg-slate-800/50 border border-slate-700 px-4 py-3 rounded-xl flex items-center justify-between">
+                            <span class="text-[11px] font-bold text-slate-200">OPENSTREETMAP</span>
+                            <span class="h-2 w-2 bg-green-500 rounded-full shadow-[0_0_8px_rgba(34,197,94,0.6)]"></span>
+                        </div>
+                    </div>
+                </div>
 
-async function load(){
-  // Dashboard stats
-  try{
-    const d=await(await fetch(A+'/admin/dashboard')).json();
-    document.getElementById('s-users').textContent=d.users.total_registered;
-    document.getElementById('s-sent').textContent=d.notifications.total_sent;
-    document.getElementById('s-rate').textContent=`${d.notifications.by_channel.email||0} email, ${d.notifications.by_channel.sms||0} SMS`;
-    document.getElementById('s-success').textContent=d.notifications.success_rate+'%';
-    document.getElementById('s-failed').textContent=d.notifications.failed;
-    document.getElementById('s-savings').textContent='$'+d.roi.estimated_savings_usd.toLocaleString();
-    document.getElementById('s-roi').textContent='ROI: '+d.roi.roi_percentage+'% vs platform cost';
-    document.getElementById('s-sources').textContent=d.data_sources.count;
+                <div class="glass-card p-6 bg-gradient-to-br from-indigo-500/10 to-transparent border-indigo-500/20">
+                    <h3 class="text-[10px] font-black uppercase tracking-widest text-indigo-400 mb-2">Ingestion Intelligence</h3>
+                    <p class="text-xs text-slate-400 leading-relaxed">
+                        Scanning 7 verified global vectors. Data is cross-referenced every 60 seconds for verified directive output.
+                    </p>
+                </div>
+            </aside>
+        </div>
+    </main>
 
-    // Channels
-    let ch='';
-    for(const[k,v]of Object.entries(d.notifications.by_channel)){
-      ch+=`<div class="stat"><div class="label">${k.toUpperCase()}</div><div class="val">${v}</div></div>`;
+    <script>
+    const A = window.location.origin + '/api/v1';
+
+    async function load() {
+        try {
+            const d = await(await fetch(A + '/admin/dashboard')).json();
+            document.getElementById('s-users').textContent = d.users.total_registered;
+            document.getElementById('s-sent').textContent = d.notifications.total_sent;
+            document.getElementById('s-rate').textContent = `${d.notifications.by_channel.email || 0} EMAIL • ${d.notifications.by_channel.sms || 0} SMS`;
+            document.getElementById('s-success').textContent = d.notifications.success_rate + '%';
+            document.getElementById('s-savings').textContent = '$' + d.roi.estimated_savings_usd.toLocaleString();
+            document.getElementById('s-roi').textContent = 'ROI: ' + d.roi.roi_percentage + '%';
+
+            let ch = '';
+            for (const [k, v] of Object.entries(d.notifications.by_channel)) {
+                ch += `<div class="glass-card p-4"><div class="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">${k}</div><div class="text-xl font-black italic">${v}</div></div>`;
+            }
+            document.getElementById('channels').innerHTML = ch;
+        } catch (e) { console.error(e); }
+
+        try {
+            const logs = await(await fetch(A + '/admin/logs')).json();
+            const logBody = document.getElementById('logBody');
+            if (logs.length > 0) {
+                logBody.innerHTML = logs.map(l => {
+                    const urgencyClass = l.urgency.toLowerCase() === 'high' ? 'bg-red-500/10 text-red-500' : l.urgency.toLowerCase() === 'medium' ? 'bg-orange-500/10 text-orange-500' : 'bg-green-500/10 text-green-500';
+                    return `<tr>
+                        <td class="mono text-[11px] text-slate-500">${new Date(l.timestamp).toLocaleTimeString()}</td>
+                        <td class="font-bold text-slate-200">${l.email}</td>
+                        <td class="text-slate-400 font-medium">${l.alert_title.substring(0, 30)}...</td>
+                        <td><span class="status-pill ${urgencyClass}">${l.urgency}</span></td>
+                        <td class="text-[10px] font-black text-slate-500 uppercase">${l.channel}</td>
+                        <td class="${l.success ? 'text-green-500' : 'text-red-500'} font-bold">${l.success ? '✓ SENT' : '✗ FAIL'}</td>
+                    </tr>`;
+                }).join('');
+            }
+        } catch (e) { }
+
+        try {
+            const users = await(await fetch(A + '/sdk/users')).json();
+            const userBody = document.getElementById('userBody');
+            if (users.length > 0) {
+                userBody.innerHTML = users.map(u => `
+                    <tr>
+                        <td class="mono text-[11px] text-indigo-400">#${u.user_id}</td>
+                        <td class="font-bold text-slate-200">${u.destination || '-'}</td>
+                        <td class="text-slate-500 text-[10px] font-black uppercase">${u.channels.join(' • ')}</td>
+                        <td class="font-black italic text-slate-300">${u.notifications_sent}</td>
+                        <td class="text-slate-500 text-xs">${new Date(u.registered_at).toLocaleDateString()}</td>
+                    </tr>
+                `).join('');
+            }
+        } catch (e) { }
     }
-    // Urgency
-    for(const[k,v]of Object.entries(d.notifications.by_urgency)){
-      ch+=`<div class="stat ${k.toLowerCase()}"><div class="label">${k} Urgency</div><div class="val">${v}</div></div>`;
-    }
-    document.getElementById('channels').innerHTML=ch||'<div class="empty">No data yet</div>';
 
-    // Sources
-    let src='';
-    d.data_sources.sources.forEach(s=>{src+=`<div class="src"><span class="dot"></span>${s}</div>`;});
-    document.getElementById('srcList').innerHTML=src;
-  }catch(e){console.error(e)}
-
-  // Notification log
-  try{
-    const logs=await(await fetch(A+'/admin/logs')).json();
-    if(logs.length===0){
-      document.getElementById('logBody').innerHTML='<tr><td colspan="7" class="empty">No notifications yet.</td></tr>';
-    }else{
-      let h='';
-      logs.forEach(l=>{
-        const t=new Date(l.timestamp).toLocaleTimeString();
-        h+=`<tr><td>${t}</td><td>${l.email}</td><td>${l.alert_title.substring(0,40)}</td><td>${l.decision}</td><td><span class="tag ${l.urgency.toLowerCase()}">${l.urgency}</span></td><td>${l.channel}</td><td><span class="tag ${l.success?'ok':'fail'}">${l.success?'✓ Sent':'✗ Failed'}</span></td></tr>`;
-      });
-      document.getElementById('logBody').innerHTML=h;
-    }
-  }catch(e){}
-
-  // Users
-  try{
-    const users=await(await fetch(A+'/sdk/users')).json();
-    if(users.length===0){
-      document.getElementById('userBody').innerHTML='<tr><td colspan="5" class="empty">No users registered.</td></tr>';
-    }else{
-      let h='';
-      users.forEach(u=>{
-        h+=`<tr><td>${u.user_id}</td><td>${u.destination||'-'}</td><td>${u.channels.join(', ')}</td><td>${u.notifications_sent}</td><td>${new Date(u.registered_at).toLocaleString()}</td></tr>`;
-      });
-      document.getElementById('userBody').innerHTML=h;
-    }
-  }catch(e){}
-}
-
-load();
-setInterval(load,10000); // Auto-refresh every 10s
-</script>
+    load();
+    setInterval(load, 10000);
+    </script>
 </body>
 </html>

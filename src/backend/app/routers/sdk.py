@@ -187,6 +187,7 @@ async def sdk_manual_alert(alert: ManualAlert):
                 instruction=instruction,
                 map_url=map_url,
                 emergency_number=country["emergency"],
+                briefing=briefing,
             )
 
         user.notification_count += 1
