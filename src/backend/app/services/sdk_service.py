@@ -15,6 +15,57 @@ from app.services.translation_service import translate_instruction
 
 logger = logging.getLogger(__name__)
 
+
+async def _generate_situation_briefing(alerts: list, destination: str, language: str) -> str:
+    """Generate a situation-specific briefing via Azure OpenAI.
+
+    Called ONCE per new threat detection — not per user.
+    Returns a concise, actionable briefing about what's happening.
+    """
+    from app.config import get_settings
+    settings = get_settings()
+    if not settings.azure_openai_endpoint or settings.ai_provider == "mock":
+        # Fallback: build from alert titles
+        titles = [a.title for a in alerts[:5]]
+        return ". ".join(titles) + "."
+
+    try:
+        from openai import AsyncAzureOpenAI
+        client = AsyncAzureOpenAI(
+            azure_endpoint=settings.azure_openai_endpoint,
+            api_key=settings.azure_openai_api_key,
+            api_version=settings.azure_openai_api_version,
+        )
+
+        alert_data = "\n".join(
+            f"- [{a.severity.upper()}] {a.title}: {a.description[:150]}"
+            for a in alerts[:8]
+        )
+
+        response = await client.chat.completions.create(
+            model=settings.azure_openai_deployment,
+            messages=[
+                {"role": "system", "content": (
+                    "You are an emergency briefing system for travelers. Write a SHORT, "
+                    "specific situation report (3-4 sentences max) about what is happening "
+                    "near the user's destination. Include: what happened, how close, "
+                    "what might happen next, and what the user should do RIGHT NOW. "
+                    "Use advisory language ('consider', 'you may want to'). "
+                    f"Write in {language if language != 'en' else 'English'}."
+                )},
+                {"role": "user", "content": (
+                    f"Destination: {destination}\n\nActive threats:\n{alert_data}"
+                )},
+            ],
+            temperature=0.2,
+            max_tokens=200,
+        )
+        return response.choices[0].message.content or ""
+    except Exception:
+        logger.exception("Failed to generate situation briefing")
+        titles = [a.title for a in alerts[:3]]
+        return ". ".join(titles) + "."
+
 # In-memory user registry (Cosmos DB in production)
 _users: dict[str, RegisteredUser] = {}
 
@@ -120,10 +171,17 @@ async def check_and_notify_user(user: RegisteredUser) -> dict:
     if not should_notify:
         return result
 
-    # Translate instruction if needed
-    instruction, fallback = await translate_instruction(
-        decision.instruction, decision.fallback_instruction, user.language,
+    # Generate situation-specific briefing via OpenAI (NOT the generic decision text)
+    situation_briefing = await _generate_situation_briefing(
+        alerts, user.destination_name, user.language,
     )
+
+    # The instruction is the decision engine's action, briefing is the context
+    instruction = decision.instruction
+    if user.language and user.language != "en":
+        instruction, _ = await translate_instruction(
+            instruction, decision.fallback_instruction, user.language,
+        )
 
     # Build map URL
     map_url = f"{_MAP_BASE}/map?lat={user.destination_lat}&lon={user.destination_lon}"
@@ -131,13 +189,13 @@ async def check_and_notify_user(user: RegisteredUser) -> dict:
     # Country info for emergency number
     country = lookup_country(user.destination_lat, user.destination_lon)
 
-    # Send email
+    # Send email with situation-specific briefing
     if user.email:
         result["email_sent"] = await send_alert_email(
             to_email=user.email,
             subject=f"{decision.action.value} — {user.destination_name or country['name']}",
             instruction=instruction,
-            threat_summary=decision.threat_summary or "Threats detected in your area.",
+            threat_summary=situation_briefing,
             emergency_number=decision.local_emergency_number,
             map_url=map_url,
             country_name=user.destination_name or country["name"],

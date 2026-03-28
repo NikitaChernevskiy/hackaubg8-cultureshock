@@ -111,19 +111,34 @@ def create_app() -> FastAPI:
             "data_freshness_warning": DATA_FRESHNESS_WARNING,
         }
 
-    # --- Serve the Amygdala map ---
+    # --- Serve Amygdala pages ---
     @application.get("/", include_in_schema=False)
-    async def serve_app():
-        return FileResponse(_STATIC_DIR / "app.html")
+    async def serve_landing():
+        """Landing page with signup form."""
+        return FileResponse(_STATIC_DIR / "landing" / "index.html")
 
     @application.get("/map", include_in_schema=False)
     async def serve_map():
-        """Map with ?lat=&lon= params from email/SMS links."""
+        """Navigation map (from email/SMS links)."""
         return FileResponse(_STATIC_DIR / "app.html")
 
     @application.get("/test", include_in_schema=False)
     async def serve_test():
+        """API test page."""
         return FileResponse(_STATIC_DIR / "index.html")
+
+    # Serve landing page static assets (React build output)
+    _LANDING_DIR = _STATIC_DIR / "landing"
+    if _LANDING_DIR.exists():
+        application.mount("/assets", StaticFiles(directory=str(_LANDING_DIR / "assets")), name="landing-assets")
+
+        @application.get("/favicon.svg", include_in_schema=False)
+        async def serve_favicon():
+            return FileResponse(_LANDING_DIR / "favicon.svg")
+
+        @application.get("/icons.svg", include_in_schema=False)
+        async def serve_icons():
+            return FileResponse(_LANDING_DIR / "icons.svg")
 
     # Service worker must be served from root scope for PWA
     @application.get("/sw.js", include_in_schema=False)
