@@ -72,6 +72,8 @@ _users: dict[str, RegisteredUser] = {}
 
 # Base URL for map links
 _MAP_BASE = "https://cultureshock-api.happywater-e6483408.eastus2.azurecontainerapps.io"
+# Short base for SMS (saves ~30 chars per message)
+_MAP_SHORT = _MAP_BASE
 
 
 def register_user(reg: SDKRegistration) -> SDKRegistrationResponse:
