@@ -13,9 +13,12 @@ def get_alert_provider() -> AlertProvider:
     if settings.alert_provider == "mock":
         from app.providers.mock_alerts import MockAlertProvider
         return MockAlertProvider()
-    if settings.alert_provider in ("usgs", "real"):
+    if settings.alert_provider == "usgs":
         from app.providers.usgs_alerts import USGSAlertProvider
         return USGSAlertProvider()
+    if settings.alert_provider in ("multi", "real", "all"):
+        from app.providers.multi_alert import MultiAlertProvider
+        return MultiAlertProvider()
     raise ValueError(f"Unknown alert provider: {settings.alert_provider}")
 
 

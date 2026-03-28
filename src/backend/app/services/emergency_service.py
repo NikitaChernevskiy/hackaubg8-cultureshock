@@ -39,7 +39,7 @@ class EmergencyService:
         now = datetime.now(timezone.utc)
 
         # Fetch alerts and transport IN PARALLEL — speed is critical
-        alerts_task = self._alerts.get_alerts(location, radius_km=100)
+        alerts_task = self._alerts.get_alerts(location, radius_km=500)
         transport_task = self._transport.get_transport_options(location)
 
         alerts, transport = await asyncio.gather(

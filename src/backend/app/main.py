@@ -6,13 +6,18 @@ the full advisory notice.
 """
 
 import logging
+import pathlib
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from starlette.middleware.gzip import GZipMiddleware
 
 from app.config import get_settings
+
+_STATIC_DIR = pathlib.Path(__file__).parent / "static"
 from app.constants import ADVISORY_DISCLAIMER, DATA_FRESHNESS_WARNING, MEDICAL_DISCLAIMER
 from app.middleware.compression import GZIP_MINIMUM_SIZE
 from app.routers import alerts, emergency, guidance, health, notifications, transport
@@ -99,6 +104,14 @@ def create_app() -> FastAPI:
             "medical_disclaimer": MEDICAL_DISCLAIMER,
             "data_freshness_warning": DATA_FRESHNESS_WARNING,
         }
+
+    # --- Serve frontend testing UI ---
+    @application.get("/", include_in_schema=False)
+    async def serve_frontend():
+        return FileResponse(_STATIC_DIR / "index.html")
+
+    if _STATIC_DIR.exists():
+        application.mount("/static", StaticFiles(directory=str(_STATIC_DIR)), name="static")
 
     return application
 

@@ -22,7 +22,7 @@ router = APIRouter(prefix="/alerts", tags=["Alerts"])
 async def get_alerts(
     lat: float,
     lon: float,
-    radius_km: float = Query(100, ge=1, le=500, description="Search radius in km"),
+    radius_km: float = Query(500, ge=1, le=2000, description="Search radius in km"),
 ):
     service = AlertService(provider=get_alert_provider())
     return await service.get_alerts_for_location(lat, lon, radius_km)

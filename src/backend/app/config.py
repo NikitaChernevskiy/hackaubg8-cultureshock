@@ -31,7 +31,7 @@ class Settings(BaseSettings):
     firebase_credentials_path: str = ""
 
     # --- Provider selection (real by default, mock for testing) ---
-    alert_provider: str = "usgs"          # usgs (real USGS+GDACS) | mock
+    alert_provider: str = "multi"        # multi (USGS+GDACS+NASA+ReliefWeb) | usgs | mock
     transport_provider: str = "osm"      # osm (real OpenStreetMap) | mock
     ai_provider: str = "azure_openai"    # azure_openai | mock
     notification_provider: str = "mock"  # mock | azure_sms | firebase
