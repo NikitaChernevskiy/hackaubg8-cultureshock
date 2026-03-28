@@ -161,11 +161,25 @@
       <button class="submit-btn" onclick="downloadOfflinePack()">Download Offline Pack</button>
     </div>
   </div>
+
+  <!-- DEMO SECTION: Simulation -->
+  <div class="section" id="sectionDemo">
+    <div class="info-card">
+      <h3>Simulation Mode</h3>
+      <p style="margin-bottom:12px">Test the decision engine with realistic disaster scenarios. These use simulated data fed through the real decision engine.</p>
+      <button class="submit-btn" style="background:var(--red);margin-bottom:8px" onclick="runSim('earthquake_nearby')">🌍 Earthquake Nearby (M6.2)</button>
+      <button class="submit-btn" style="background:var(--orange);margin-bottom:8px" onclick="runSim('geopolitical_crisis')">⚠️ Geopolitical Crisis</button>
+      <button class="submit-btn" style="background:var(--blue);margin-bottom:8px" onclick="runSim('flood_warning')">🌊 Severe Flood</button>
+      <button class="submit-btn" style="background:var(--green);margin-bottom:8px" onclick="runSim('all_clear')">✅ All Clear (No Threats)</button>
+      <button class="submit-btn" style="background:var(--s2);border:1px solid var(--border);margin-bottom:0" onclick="fetchDecision();fetchAlerts();showSection('sectionMain',document.querySelector('.em-btn'))">↩ Return to Live Data</button>
+    </div>
+  </div>
 </div>
 
 <div class="emergency-bar">
   <div class="em-btn active" onclick="showSection('sectionMain',this)"><div class="icon">🛡️</div>Status</div>
   <div class="em-btn" onclick="showSection('sectionReport',this)"><div class="icon">📝</div>Report</div>
+  <div class="em-btn" onclick="showSection('sectionDemo',this)"><div class="icon">🧪</div>Demo</div>
   <div class="em-btn" onclick="showSection('sectionInfo',this)"><div class="icon">ℹ️</div>Info</div>
   <div class="em-btn" onclick="callEmergency()"><div class="icon">🆘</div><span id="callLabel">Call 112</span></div>
 </div>
@@ -257,6 +271,31 @@ async function submitReport(){
     document.getElementById('reportResult').innerHTML=d.accepted?'<span style="color:var(--green)">✓ Report submitted. '+d.reports_in_area+' reports in your area.</span>':'<span style="color:var(--red)">Rate limited. Try later.</span>';
   }catch(e){document.getElementById('reportResult').innerHTML='<span style="color:var(--red)">No connection</span>';}
   btn.textContent='Submit Report';btn.disabled=false;
+}
+
+async function runSim(scenario){
+  showSection('sectionMain',document.querySelector('.em-btn'));
+  document.getElementById('instrText').textContent='Running simulation...';
+  try{
+    const res=await fetch(API+'/simulate/'+scenario+'?lat='+userLat+'&lon='+userLon,{method:'POST'});
+    const d=await res.json();lastDecision=d;
+    document.querySelectorAll('.phase-item').forEach(el=>el.classList.toggle('active',el.dataset.phase===d.phase));
+    const card=document.getElementById('instrCard');card.className='instruction-card '+d.urgency;
+    document.getElementById('instrUrgency').textContent='⚠ SIMULATED — '+d.urgency;
+    document.getElementById('instrAction').textContent=d.action;
+    document.getElementById('instrText').textContent=d.instruction;
+    document.getElementById('instrFallback').textContent='Fallback: '+d.fallback_instruction;
+    const pct=Math.round(d.confidence*100);
+    document.getElementById('confFill').style.width=pct+'%';
+    document.getElementById('confFill').style.background=pct>70?'var(--green)':pct>40?'var(--yellow)':'var(--red)';
+    document.getElementById('confPct').textContent=pct+'%';
+    document.getElementById('trustInfo').textContent=d.sources_agreeing+' of '+d.sources_total+' sources';
+    // Show simulated threats
+    const threats=d.threat_summary?d.threat_summary.split(';'):[];
+    let h='<h3>Simulated Threats ('+threats.length+')</h3>';
+    threats.forEach(t=>{h+='<div class="threat-item"><div class="threat-dot high"></div><div>'+t.trim()+'</div></div>';});
+    document.getElementById('threatsList').innerHTML=h;
+  }catch(e){document.getElementById('instrText').textContent='Simulation failed: '+e.message;}
 }
 
 async function downloadOfflinePack(){

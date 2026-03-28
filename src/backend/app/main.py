@@ -22,7 +22,7 @@ from app.config import get_settings
 _STATIC_DIR = pathlib.Path(__file__).parent / "static"
 from app.constants import ADVISORY_DISCLAIMER, DATA_FRESHNESS_WARNING, MEDICAL_DISCLAIMER
 from app.middleware.compression import GZIP_MINIMUM_SIZE
-from app.routers import alerts, decision, emergency, guidance, health, notifications, offline, reports, transport
+from app.routers import alerts, decision, emergency, guidance, health, notifications, offline, reports, simulation, transport
 
 logger = logging.getLogger(__name__)
 
@@ -94,6 +94,7 @@ def create_app() -> FastAPI:
     application.include_router(notifications.router, prefix=prefix)
     application.include_router(reports.router, prefix=prefix)
     application.include_router(offline.router, prefix=prefix)
+    application.include_router(simulation.router, prefix=prefix)
 
     # --- Legal disclaimer endpoint (static) ---
     @application.get(

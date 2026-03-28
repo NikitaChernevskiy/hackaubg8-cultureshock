@@ -84,6 +84,55 @@ def _find_nearest_safe(transport: list[TransportOption]) -> str:
     return ""
 
 
+def _filter_relevant_alerts(alerts: list[Alert]) -> list[Alert]:
+    """Filter alerts to only those that are ACTIONABLE for the user's location.
+
+    Distance thresholds (approximate):
+    - Earthquake: relevant if < 100km (you'd feel M5+), informational if < 300km
+    - Geopolitical/FCDO: relevant if user is IN that country (dist < 200km from centroid)
+    - Wildfire/flood: relevant if < 50km (direct impact)
+    - Weather: relevant if < 100km
+    - Other: relevant if < 150km
+
+    Alerts beyond these distances are informational only — they should NOT
+    trigger SHELTER/STAY/MOVE actions.
+    """
+    # Distance thresholds by alert type (km)
+    _RELEVANCE_THRESHOLDS = {
+        "earthquake": 150,      # Feel zone for M5+
+        "tsunami": 200,         # Coastal impact zone
+        "volcanic_eruption": 100,
+        "flood": 80,
+        "wildfire": 50,
+        "hurricane": 200,
+        "tornado": 50,
+        "landslide": 30,
+        "geopolitical": 300,    # Country-level (FCDO covers whole countries)
+        "civil_unrest": 100,
+        "terrorism": 50,
+        "pandemic": 500,        # Broad
+        "industrial_accident": 50,
+        "other": 100,
+    }
+
+    relevant = []
+    for alert in alerts:
+        dist = alert.radius_km or 0  # Distance from user
+        threshold = _RELEVANCE_THRESHOLDS.get(alert.type, 100)
+        sev = _SEV_NUM.get(alert.severity, 0)
+
+        # Higher severity = larger relevance radius
+        if sev >= 4:  # critical
+            threshold *= 2
+        elif sev >= 3:  # high
+            threshold *= 1.5
+
+        if dist <= threshold:
+            relevant.append(alert)
+
+    return relevant
+
+
 def make_decision(
     alerts: list[Alert],
     transport: list[TransportOption],
@@ -101,13 +150,18 @@ def make_decision(
     # --- TRUST SCORING ---
     trust = compute_trust_score(alerts)
 
-    # --- CLASSIFY THREATS ---
+    # --- FILTER BY PROXIMITY ---
+    # Distant threats should NOT trigger action. A M4.5 earthquake 400km away
+    # is informational, not actionable. Only nearby threats drive decisions.
+    relevant_alerts = _filter_relevant_alerts(alerts)
+
+    # --- CLASSIFY THREATS (from relevant alerts only) ---
     max_severity = 0
     threat_types: set[str] = set()
     threat_descriptions: list[str] = []
     has_geopolitical = False
 
-    for alert in alerts:
+    for alert in relevant_alerts:
         sev = _SEV_NUM.get(alert.severity, 0)
         if sev > max_severity:
             max_severity = sev
@@ -117,11 +171,17 @@ def make_decision(
         if alert.type == "geopolitical":
             has_geopolitical = True
 
-    # --- PHASE ---
-    phase = _determine_phase(alerts)
+    # Also include distant alerts in descriptions (informational only)
+    distant = [a for a in alerts if a not in relevant_alerts and _SEV_NUM.get(a.severity, 0) >= 2]
+    for alert in distant[:3]:
+        dist_km = alert.radius_km or 0
+        threat_descriptions.append(f"{alert.title} ({dist_km:.0f}km away, informational)")
 
-    # --- DECISION TREE (deterministic) ---
-    # Priority 1: Immediate lethal threat → SHELTER
+    # --- PHASE (based on relevant alerts only) ---
+    phase = _determine_phase(relevant_alerts)
+
+    # --- DECISION TREE (deterministic, relevant alerts only) ---
+    # Priority 1: Immediate lethal threat NEARBY → SHELTER
     has_lethal = bool(threat_types & _LETHAL_TYPES) and max_severity >= 3
     # Priority 2: Unsafe to move → STAY
     has_mobility_risk = bool(threat_types & _MOBILITY_UNSAFE) and max_severity >= 2
@@ -131,7 +191,7 @@ def make_decision(
     )
     has_evac_trigger = bool(threat_types & _EVACUATION_TYPES) and max_severity >= 3
 
-    # Geopolitical: if FCDO says "advise against all travel", that's a MOVE signal
+    # Geopolitical: only triggers if user is IN the affected country (critical)
     if has_geopolitical and max_severity >= 4:
         has_evac_trigger = True
 
