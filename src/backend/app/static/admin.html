@@ -137,7 +137,7 @@
                 <div class="stat-value" id="s-success">-</div>
             </div>
             <div class="glass-card p-6 border-l-4 border-l-green-500">
-                <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Est. Savings (USD)</p>
+                <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Total Cost (USD)</p>
                 <div class="stat-value text-green-500" id="s-savings">-</div>
                 <div class="mt-1 text-[10px] font-bold text-slate-400 uppercase" id="s-roi">-</div>
             </div>
@@ -258,8 +258,9 @@
             document.getElementById('s-sent').textContent = d.notifications.total_sent;
             document.getElementById('s-rate').textContent = `${d.notifications.by_channel.email || 0} EMAIL • ${d.notifications.by_channel.sms || 0} SMS`;
             document.getElementById('s-success').textContent = d.notifications.success_rate + '%';
-            document.getElementById('s-savings').textContent = '$' + d.roi.estimated_savings_usd.toLocaleString();
-            document.getElementById('s-roi').textContent = 'ROI: ' + d.roi.roi_percentage + '%';
+            const c = d.costs || {};
+            document.getElementById('s-savings').textContent = '$' + (c.total_cost_usd || 0).toFixed(2);
+            document.getElementById('s-roi').textContent = '$' + (c.cost_per_user_usd || 0).toFixed(2) + '/user · $' + (c.cost_per_notification_usd || 0).toFixed(4) + '/alert';
 
             let ch = '';
             for (const [k, v] of Object.entries(d.notifications.by_channel)) {
