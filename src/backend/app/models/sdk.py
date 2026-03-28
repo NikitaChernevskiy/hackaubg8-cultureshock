@@ -8,14 +8,19 @@ __all__ = ["SDKRegistration", "SDKRegistrationResponse", "RegisteredUser"]
 
 
 class SDKRegistration(BaseModel):
-    """Insurance company registers a user with their trip details."""
-    phone: str = Field("", description="Phone in E.164 format (+359888123456)")
-    email: str = Field("", description="User's email address")
-    destination_lat: float = Field(..., ge=-90, le=90, description="Trip destination latitude")
-    destination_lon: float = Field(..., ge=-180, le=180, description="Trip destination longitude")
+    """Register a user for threat monitoring.
+
+    For the SDK/insurance integration, destination comes from the policy.
+    For the demo signup, destination is set later via manual alerts.
+    """
+    email: str = Field(..., description="User's email address (required)")
+    phone: str = Field("", description="Phone in E.164 format (+359888123456), optional")
+    destination_lat: float = Field(0, ge=-90, le=90, description="Trip destination latitude (0 = not set)")
+    destination_lon: float = Field(0, ge=-180, le=180, description="Trip destination longitude (0 = not set)")
     destination_name: str = Field("", description="Destination city/country name")
     language: str = Field("en", description="Preferred language (ISO 639-1)")
     partner_id: str = Field("", description="Insurance company identifier")
+    gdpr_consent: bool = Field(False, description="User consented to data processing per GDPR")
 
 
 class SDKRegistrationResponse(BaseModel):
