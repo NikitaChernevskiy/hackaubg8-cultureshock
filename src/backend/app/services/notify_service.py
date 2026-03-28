@@ -119,15 +119,19 @@ async def send_alert_sms(
     try:
         import httpx
 
-        # Full SMS — this could be the last message they receive
-        # Build parts, then trim briefing to fit 1600 char Twilio limit
-        header = f"AMYGDALA: {instruction}"
-        footer = f"\n[AI advisory]\n{map_url}\nCall {emergency_number}"
-        overhead = len(header) + len(footer) + 10  # newlines
-        budget = 1580 - overhead
-        briefing_text = f"\n\n{briefing[:budget]}" if briefing and budget > 50 else ""
-        
-        body = f"{header}{briefing_text}\n{footer}"
+        # Structure: instruction first, then URL (critical — never truncate),
+        # then briefing fills remaining space, then AI label at the end.
+        line1 = f"AMYGDALA: {instruction}"
+        line2 = f"\n{map_url}"
+        line3 = f"\nCall {emergency_number}"
+        label = "\n[AI advisory]"
+        fixed = line1 + line2 + line3 + label
+        # Remaining budget for the AI briefing
+        budget = 1580 - len(fixed)
+        if briefing and budget > 80:
+            body = line1 + f"\n\n{briefing[:budget]}" + line2 + line3 + label
+        else:
+            body = fixed
 
         async with httpx.AsyncClient() as client:
             resp = await client.post(
