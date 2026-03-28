@@ -54,13 +54,14 @@ def get_dashboard_stats() -> dict:
     # Users with notifications
     notified_users = len(set(n["user_id"] for n in _notification_log))
 
-    # ROI estimate (simplified)
-    # Average insurance claim for travel emergency: ~$5,000
-    # If even 1 in 10 alerts prevents a claim, ROI is significant
-    estimated_claims_prevented = max(1, successful // 10)
-    estimated_savings = estimated_claims_prevented * 5000
-    sdk_cost_per_month = 25  # Azure hosting
-    roi_percentage = round((estimated_savings / max(1, sdk_cost_per_month)) * 100, 0) if sdk_cost_per_month > 0 else 0
+    # Cost tracking (real, not estimated)
+    # Platform: ~$25/mo Azure hosting + ~$0.01/email + ~$0.08/SMS
+    platform_cost_monthly = 25.0
+    email_cost = channels.get("email", 0) * 0.01  # Azure Comm Services
+    sms_cost = channels.get("sms", 0) * 0.08      # Twilio
+    total_cost = round(platform_cost_monthly + email_cost + sms_cost, 2)
+    cost_per_user = round(total_cost / max(1, total_users), 2)
+    cost_per_notification = round((email_cost + sms_cost) / max(1, total_notifications), 4)
 
     return {
         "timestamp": now.isoformat(),
@@ -78,15 +79,19 @@ def get_dashboard_stats() -> dict:
             "by_channel": dict(channels),
             "by_urgency": dict(urgencies),
         },
-        "roi": {
-            "estimated_claims_prevented": estimated_claims_prevented,
-            "estimated_savings_usd": estimated_savings,
-            "platform_cost_usd": sdk_cost_per_month,
-            "roi_percentage": roi_percentage,
+        "costs": {
+            "platform_monthly_usd": platform_cost_monthly,
+            "email_cost_usd": round(email_cost, 2),
+            "sms_cost_usd": round(sms_cost, 2),
+            "total_cost_usd": total_cost,
+            "cost_per_user_usd": cost_per_user,
+            "cost_per_notification_usd": cost_per_notification,
+            "note": "Platform: Azure Container App + OpenAI. Email: $0.01/msg. SMS: $0.08/msg.",
         },
         "data_sources": {
             "count": 7,
             "sources": ["USGS", "GDACS", "NASA EONET", "UK FCDO", "Meteoalarm", "ReliefWeb", "OpenStreetMap"],
+            "note": "All free, no API keys. Government and UN sources.",
         },
     }
 
