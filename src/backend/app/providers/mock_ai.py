@@ -17,7 +17,6 @@ class MockAIProvider(AIProvider):
         location: Location,
         alerts: list[Alert],
         transport: list[TransportOption],
-        user_situation: str = "",
         language: str = "en",
     ) -> dict:
         # Determine severity from alerts

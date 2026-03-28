@@ -48,7 +48,6 @@ class AIProvider(ABC):
         location: Location,
         alerts: list[Alert],
         transport: list[TransportOption],
-        user_situation: str = "",
         language: str = "en",
     ) -> dict:
         """Generate advisory guidance text.

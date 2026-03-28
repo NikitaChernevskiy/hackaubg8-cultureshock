@@ -13,7 +13,9 @@ def get_alert_provider() -> AlertProvider:
     if settings.alert_provider == "mock":
         from app.providers.mock_alerts import MockAlertProvider
         return MockAlertProvider()
-    # Future: "gdacs", "usgs", etc.
+    if settings.alert_provider in ("usgs", "real"):
+        from app.providers.usgs_alerts import USGSAlertProvider
+        return USGSAlertProvider()
     raise ValueError(f"Unknown alert provider: {settings.alert_provider}")
 
 
@@ -23,7 +25,9 @@ def get_transport_provider() -> TransportProvider:
     if settings.transport_provider == "mock":
         from app.providers.mock_transport import MockTransportProvider
         return MockTransportProvider()
-    # Future: "google_maps", etc.
+    if settings.transport_provider in ("osm", "real"):
+        from app.providers.osm_transport import OSMTransportProvider
+        return OSMTransportProvider()
     raise ValueError(f"Unknown transport provider: {settings.transport_provider}")
 
 

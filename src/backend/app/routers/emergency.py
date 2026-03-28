@@ -41,6 +41,5 @@ async def get_emergency_bundle(request: EmergencyBundleRequest):
     return await service.get_emergency_bundle(
         lat=request.latitude,
         lon=request.longitude,
-        user_situation=request.situation,
         language=request.language,
     )

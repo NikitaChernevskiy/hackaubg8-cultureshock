@@ -46,7 +46,6 @@ class GuidanceService:
         lon: float,
         alerts: list[Alert],
         transport: list[TransportOption],
-        user_situation: str = "",
         language: str = "en",
         data_sources: list[DataSource] | None = None,
     ) -> GuidanceResponse:
@@ -58,7 +57,6 @@ class GuidanceService:
             location=location,
             alerts=alerts,
             transport=transport,
-            user_situation=user_situation,
             language=language,
         )
 
@@ -93,7 +91,7 @@ class GuidanceService:
         # Audit log — record what advice was given
         logger.info(
             "ADVISORY_AUDIT | lat=%.4f lon=%.4f | action=%s | confidence=%.2f | "
-            "model=%s | alerts=%d | transport=%d | situation='%s'",
+            "model=%s | alerts=%d | transport=%d",
             lat,
             lon,
             response.action_suggestion,
@@ -101,7 +99,6 @@ class GuidanceService:
             advisory_meta.ai_model,
             len(alerts),
             len(transport),
-            user_situation[:100],
         )
 
         return response

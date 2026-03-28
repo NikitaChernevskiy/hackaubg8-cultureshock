@@ -12,15 +12,14 @@ __all__ = ["EmergencyBundleRequest", "EmergencyBundleResponse"]
 
 
 class EmergencyBundleRequest(BaseModel):
-    """Request for the emergency bundle — one call, everything you need."""
+    """Request for the emergency bundle — one call, everything you need.
+
+    The app detects emergencies and tells the user what is happening.
+    No user situation input — the system is the source of truth.
+    """
 
     latitude: float = Field(..., ge=-90, le=90)
     longitude: float = Field(..., ge=-180, le=180)
-    situation: str = Field(
-        "",
-        max_length=500,
-        description="Optional: what the user is experiencing",
-    )
     language: str = Field("en", description="Preferred language (ISO 639-1)")
 
 

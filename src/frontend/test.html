@@ -312,7 +312,7 @@
 <div class="container">
   <header>
     <h1>Culture<span>Shock</span> API Tester</h1>
-    <p>Emergency Advisory API &mdash; Test all endpoints</p>
+    <p>Emergency Advisory API &mdash; Real-time data from USGS, GDACS, OpenStreetMap</p>
   </header>
   
   <div class="status-bar" id="statusBar">
@@ -355,13 +355,7 @@
     </div>
     
     <div class="control-group">
-      <h3>Situation</h3>
-      <div class="control-row">
-        <div class="field">
-          <label>Describe what you're experiencing (optional)</label>
-          <textarea id="situation" placeholder="e.g., I felt the ground shake, power went out briefly. I'm a tourist in a hotel near the center."></textarea>
-        </div>
-      </div>
+      <h3>Settings</h3>
       <div class="control-row">
         <div class="field">
           <label>Language</label>
@@ -375,7 +369,16 @@
             <option value="de">German</option>
           </select>
         </div>
+        <div class="field">
+          <label>Search radius (alerts)</label>
+          <select id="radius">
+            <option value="100">100 km</option>
+            <option value="250">250 km</option>
+            <option value="500" selected>500 km</option>
+          </select>
+        </div>
       </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:8px;">Data sources: USGS Earthquakes, GDACS Disasters, OpenStreetMap transport infrastructure, Azure OpenAI (GPT-4o). All real-time, no mock data.</div>
     </div>
   </div>
   
@@ -400,8 +403,8 @@ const API = 'https://cultureshock-api.happywater-e6483408.eastus2.azurecontainer
 
 function getLat() { return parseFloat(document.getElementById('lat').value); }
 function getLon() { return parseFloat(document.getElementById('lon').value); }
-function getSituation() { return document.getElementById('situation').value; }
 function getLanguage() { return document.getElementById('language').value; }
+function getRadius() { return parseInt(document.getElementById('radius').value); }
 
 function applyPreset() {
   const v = document.getElementById('presets').value;
@@ -625,7 +628,7 @@ async function callBundle() {
   try {
     const { data, elapsed } = await apiCall('POST', '/emergency/bundle', {
       latitude: getLat(), longitude: getLon(),
-      situation: getSituation(), language: getLanguage()
+      language: getLanguage()
     });
     document.getElementById('results').innerHTML = renderBundle(data, elapsed);
   } catch (e) {
@@ -658,7 +661,7 @@ async function callGuidance() {
   try {
     const { data, elapsed } = await apiCall('POST', '/guidance/plan', {
       latitude: getLat(), longitude: getLon(),
-      situation: getSituation(), language: getLanguage()
+      language: getLanguage()
     });
     document.getElementById('results').innerHTML = renderGuidance(data, elapsed);
   } catch (e) {

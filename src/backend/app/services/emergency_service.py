@@ -33,7 +33,6 @@ class EmergencyService:
         self,
         lat: float,
         lon: float,
-        user_situation: str = "",
         language: str = "en",
     ) -> EmergencyBundleResponse:
         location = Location(latitude=lat, longitude=lon)
@@ -55,12 +54,11 @@ class EmergencyService:
             logger.error("Transport provider failed: %s", transport)
             transport = []
 
-        # Generate AI advisory using available data
+        # Generate AI advisory using real detected data
         ai_result = await self._ai.generate_guidance(
             location=location,
             alerts=alerts,
             transport=transport,
-            user_situation=user_situation,
             language=language,
         )
 

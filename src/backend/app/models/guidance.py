@@ -10,15 +10,14 @@ __all__ = ["GuidanceRequest", "GuidanceResponse"]
 
 
 class GuidanceRequest(BaseModel):
-    """Request for AI-generated advisory guidance."""
+    """Request for AI-generated advisory guidance.
+
+    The app detects emergencies from real data sources and generates
+    advisory guidance automatically. No user situation input.
+    """
 
     latitude: float = Field(..., ge=-90, le=90)
     longitude: float = Field(..., ge=-180, le=180)
-    situation: str = Field(
-        "",
-        max_length=500,
-        description="Optional: what the user is experiencing in their own words",
-    )
     language: str = Field("en", description="Preferred language (ISO 639-1)")
 
 

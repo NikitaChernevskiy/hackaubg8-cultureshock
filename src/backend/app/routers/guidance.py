@@ -40,14 +40,13 @@ async def get_guidance(request: GuidanceRequest):
         request.latitude, request.longitude
     )
 
-    # Generate advisory
+    # Generate advisory from detected data — no user situation input
     guidance_service = GuidanceService(ai_provider=get_ai_provider())
     return await guidance_service.generate_guidance(
         lat=request.latitude,
         lon=request.longitude,
         alerts=alerts_resp.alerts,
         transport=transport_resp.options,
-        user_situation=request.situation,
         language=request.language,
         data_sources=alerts_resp.sources + transport_resp.sources,
     )

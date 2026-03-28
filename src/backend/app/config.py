@@ -30,11 +30,11 @@ class Settings(BaseSettings):
     # --- Firebase Push Notifications ---
     firebase_credentials_path: str = ""
 
-    # --- Provider selection (swap mock ↔ real) ---
-    alert_provider: str = "mock"        # mock | gdacs
-    transport_provider: str = "mock"    # mock | google_maps
-    ai_provider: str = "mock"           # mock | azure_openai
-    notification_provider: str = "mock" # mock | azure_sms | firebase
+    # --- Provider selection (real by default, mock for testing) ---
+    alert_provider: str = "usgs"          # usgs (real USGS+GDACS) | mock
+    transport_provider: str = "osm"      # osm (real OpenStreetMap) | mock
+    ai_provider: str = "azure_openai"    # azure_openai | mock
+    notification_provider: str = "mock"  # mock | azure_sms | firebase
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
 

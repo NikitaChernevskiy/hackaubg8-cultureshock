@@ -66,10 +66,9 @@ class AzureOpenAIProvider(AIProvider):
         location: Location,
         alerts: list[Alert],
         transport: list[TransportOption],
-        user_situation: str = "",
         language: str = "en",
     ) -> dict:
-        # Build structured context for the LLM
+        # Build structured context for the LLM — real detected data only
         context = {
             "location": {
                 "latitude": location.latitude,
@@ -96,7 +95,6 @@ class AzureOpenAIProvider(AIProvider):
                 }
                 for t in transport
             ],
-            "user_situation": user_situation,
         }
 
         user_message = (
@@ -133,13 +131,11 @@ class AzureOpenAIProvider(AIProvider):
             # Calculate confidence based on data completeness
             confidence = 0.5
             if alerts:
-                confidence += 0.2
+                confidence += 0.25
             if transport:
                 confidence += 0.15
             if location.city:
                 confidence += 0.1
-            if user_situation:
-                confidence += 0.05
             confidence = min(confidence, 0.95)  # Never claim 100% confidence
 
             return {
