@@ -27,6 +27,11 @@ class Settings(BaseSettings):
     azure_comm_connection_string: str = ""
     azure_comm_from_number: str = ""
 
+    # --- Twilio SMS ---
+    twilio_account_sid: str = ""
+    twilio_auth_token: str = ""
+    twilio_from_number: str = ""
+
     # --- Firebase Push Notifications ---
     firebase_credentials_path: str = ""
 

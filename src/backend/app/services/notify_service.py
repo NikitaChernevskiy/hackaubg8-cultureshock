@@ -105,26 +105,35 @@ async def send_alert_sms(
     map_url: str,
     emergency_number: str,
 ) -> bool:
-    """Send SMS via Azure Communication Services (requires purchased phone number)."""
+    """Send SMS via Twilio."""
     settings = get_settings()
-    if not settings.azure_comm_connection_string or not settings.azure_comm_from_number:
-        logger.warning("SMS not configured (no from_number), skipping SMS to %s", to_phone)
+    if not settings.twilio_account_sid or not settings.twilio_from_number:
+        logger.warning("Twilio SMS not configured, skipping SMS to %s", to_phone)
         return False
 
     try:
-        from azure.communication.sms import SmsClient
-        client = SmsClient.from_connection_string(settings.azure_comm_connection_string)
+        import httpx
 
-        # SMS is 160 chars max, keep it tight
-        body = f"⚠ AMYGDALA: {instruction[:80]} Map: {map_url} Emergency: {emergency_number}"
+        # SMS body — concise, actionable
+        body = f"AMYGDALA: {instruction[:100]}\nMap: {map_url}\nEmergency: {emergency_number}"
 
-        response = client.send(from_=settings.azure_comm_from_number, to=to_phone, message=body[:160])
-        result = response[0]
-        if result.successful:
-            logger.info("SMS_SENT | to=%s | id=%s", to_phone, result.message_id)
+        async with httpx.AsyncClient() as client:
+            resp = await client.post(
+                f"https://api.twilio.com/2010-04-01/Accounts/{settings.twilio_account_sid}/Messages.json",
+                auth=(settings.twilio_account_sid, settings.twilio_auth_token),
+                data={
+                    "From": settings.twilio_from_number,
+                    "To": to_phone,
+                    "Body": body[:1600],
+                },
+            )
+
+        if resp.status_code in (200, 201):
+            result = resp.json()
+            logger.info("SMS_SENT | to=%s | sid=%s", to_phone, result.get("sid", ""))
             return True
         else:
-            logger.error("SMS_FAILED | to=%s | error=%s", to_phone, result.error_message)
+            logger.error("SMS_FAILED | to=%s | status=%s | body=%s", to_phone, resp.status_code, resp.text[:200])
             return False
     except Exception:
         logger.exception("Failed to send SMS to %s", to_phone)
