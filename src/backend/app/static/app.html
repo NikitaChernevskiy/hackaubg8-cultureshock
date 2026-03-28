@@ -63,7 +63,7 @@ body{font-family:-apple-system,sans-serif;background:#0b0b12;color:#e4e4ef}
 
 <div class="demo-bar" id="dbar">
   <div class="demo-btn on" onclick="goLive(this)">● LIVE</div>
-  <div class="demo-btn" onclick="sim('dubai_crisis',this)" style="border-color:#ef4444;color:#ef4444">⚠ Dubai Crisis</div>
+  <div class="demo-btn" onclick="sim('abudhabi_2022',this)" style="border-color:#ef4444;color:#ef4444">⚠ Abu Dhabi '22</div>
   <div class="demo-btn" onclick="sim('turkey_2023',this)">Turkey '23</div>
   <div class="demo-btn" onclick="sim('israel_2023',this)">Israel '23</div>
   <div class="demo-btn" onclick="sim('valencia_2024',this)">Valencia '24</div>
@@ -101,6 +101,8 @@ function clearMarkers(){
   if(routeLine){M.removeLayer(routeLine);routeLine=null;}
 }
 
+let dangerZones=[];
+
 function renderDecision(d){
   const u=d.urgency||'LOW';
   const el=document.getElementById('instr');
@@ -109,52 +111,62 @@ function renderDecision(d){
   document.getElementById('ibadge').textContent=d.action;
   document.getElementById('isub').textContent=d.fallback_instruction||'';
   document.getElementById('phase').textContent=d.phase||'-';
-  // Emergency number available in decision response: d.local_emergency_number
-
-  // Show nearest safe option on map
-  if(d.nearest_safe_option && d.action !== 'MONITOR'){
-    // Parse "Name (type, Xkm)" format
-    const m=d.nearest_safe_option.match(/^(.+)\s+\((.+),\s+([\d.]+)km\)$/);
-    if(m){
-      // Approximate safe point location (we don't have exact coords in decision response)
-      // So fetch transport to get the real location
-      fetchTransportAndMark();
-    }
+  // Always fetch route to safety when there's a threat
+  if(d.action && d.action !== 'MONITOR'){
+    fetchRouteToSafety(lat, lon);
   }
 }
 
-async function fetchTransportAndMark(){
+async function fetchRouteToSafety(fromLat, fromLon){
   try{
-    const r=await fetch(A+'/transport/status/'+lat+'/'+lon);
+    const r=await fetch(A+'/transport/status/'+fromLat+'/'+fromLon);
     const d=await r.json();
     const opts=(d.options||[]).filter(t=>t.status!=='closed');
-    if(opts.length>0){
-      const best=opts[0];
-      const slat=best.location.latitude,slon=best.location.longitude;
+    if(opts.length>0) await drawRoute(fromLat, fromLon, opts[0]);
+  }catch(e){console.log('Route fetch failed:',e)}
+}
 
-      // Safe point marker
-      safeMarker=L.marker([slat,slon],{
-        icon:L.divIcon({className:'',html:'<div style="background:#22c55e;color:#fff;padding:4px 8px;border-radius:6px;font-size:11px;font-weight:800;white-space:nowrap;box-shadow:0 2px 8px #0008">🏥 '+best.name.substring(0,25)+'</div>',iconSize:[0,0],iconAnchor:[-5,10]})
-      }).addTo(M);
+async function drawRoute(fromLat, fromLon, dest){
+  if(safeMarker){M.removeLayer(safeMarker);safeMarker=null;}
+  if(routeLine){M.removeLayer(routeLine);routeLine=null;}
+  dangerZones.forEach(z=>M.removeLayer(z));dangerZones=[];
 
-      // Route via OSRM (real road routing, free)
-      try{
-        const rr=await fetch(`https://router.project-osrm.org/route/v1/foot/${lon},${lat};${slon},${slat}?overview=full&geometries=geojson`);
-        const rd=await rr.json();
-        if(rd.routes&&rd.routes[0]){
-          const coords=rd.routes[0].geometry.coordinates.map(c=>[c[1],c[0]]);
-          routeLine=L.polyline(coords,{color:'#22c55e',weight:4,opacity:0.8}).addTo(M);
-        }else{
-          routeLine=L.polyline([[lat,lon],[slat,slon]],{color:'#22c55e',weight:3,dashArray:'8,8'}).addTo(M);
-        }
-      }catch(e){
-        routeLine=L.polyline([[lat,lon],[slat,slon]],{color:'#22c55e',weight:3,dashArray:'8,8'}).addTo(M);
-      }
+  const toLat=dest.location.latitude, toLon=dest.location.longitude;
+  const dist=dest.distance_km||0;
 
-      // Fit map to show both points
-      M.fitBounds([[lat,lon],[slat,slon]],{padding:[80,40]});
+  // Destination marker
+  safeMarker=L.marker([toLat,toLon],{
+    icon:L.divIcon({className:'',html:'<div style="background:#22c55e;color:#fff;padding:6px 10px;border-radius:8px;font-size:12px;font-weight:800;white-space:nowrap;box-shadow:0 2px 12px #0006">'+dest.name.substring(0,30)+'<br><span style="font-weight:400;font-size:10px">'+dist+'km away</span></div>',iconSize:[0,0],iconAnchor:[-5,15]})
+  }).addTo(M);
+
+  // Mark danger zones from alert markers
+  alertMarkers.forEach(m=>{
+    const ll=m.getLatLng();
+    const dz=L.circle([ll.lat,ll.lng],{radius:5000,color:'#ef4444',fillColor:'#ef4444',fillOpacity:0.08,weight:1,dashArray:'4,4'}).addTo(M);
+    dangerZones.push(dz);
+  });
+
+  // OSRM road routing — driving for long distances, foot for short
+  const profile=dist>10?'driving':'foot';
+  try{
+    const rr=await fetch('https://router.project-osrm.org/route/v1/'+profile+'/'+fromLon+','+fromLat+';'+toLon+','+toLat+'?overview=full&geometries=geojson');
+    const rd=await rr.json();
+    if(rd.routes&&rd.routes[0]){
+      const coords=rd.routes[0].geometry.coordinates.map(c=>[c[1],c[0]]);
+      const mins=Math.round(rd.routes[0].duration/60);
+      const km=Math.round(rd.routes[0].distance/1000);
+      routeLine=L.polyline(coords,{color:'#22c55e',weight:5,opacity:0.85}).addTo(M);
+      // Route info label at midpoint
+      const mid=coords[Math.floor(coords.length/2)];
+      const info=L.marker(mid,{icon:L.divIcon({className:'',html:'<div style="background:#22c55e;color:#fff;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;white-space:nowrap">'+km+'km ~ '+mins+'min</div>',iconSize:[0,0],iconAnchor:[-5,5]})}).addTo(M);
+      alertMarkers.push(info);// so it gets cleared
+    }else{
+      routeLine=L.polyline([[fromLat,fromLon],[toLat,toLon]],{color:'#22c55e',weight:3,dashArray:'8,8'}).addTo(M);
     }
-  }catch(e){}
+  }catch(e){
+    routeLine=L.polyline([[fromLat,fromLon],[toLat,toLon]],{color:'#22c55e',weight:3,dashArray:'8,8'}).addTo(M);
+  }
+  M.fitBounds([[fromLat,fromLon],[toLat,toLon]],{padding:[80,60]});
 }
 
 async function renderAlerts(alerts){
@@ -185,15 +197,31 @@ async function go(){
 async function sim(s,btn){
   document.querySelectorAll('.demo-btn').forEach(b=>b.classList.remove('on'));btn.classList.add('on');
   try{
+    // Get scenario location first
+    const sc=await(await fetch(A+'/simulate/scenarios')).json();
+    const sloc=sc[s];
+    if(sloc){
+      // Move map to event location and update lat/lon for routing
+      lat=sloc.default_lat; lon=sloc.default_lon;
+      M.setView([lat,lon],10);
+    }
+    clearMarkers();
+    // Run simulation
     const r=await fetch(A+'/simulate/'+s,{method:'POST'});
     const d=await r.json();d.urgency=d.urgency||'HIGH';
+    // Render the decision (this triggers route fetching)
     renderDecision(d);
     document.getElementById('ibadge').textContent='⚠ SIM: '+d.action;
-    // Move map to event location
-    const sc=await(await fetch(A+'/simulate/scenarios')).json();
-    if(sc[s]){M.setView([sc[s].default_lat,sc[s].default_lon],10);}
-    clearMarkers();
-  }catch(e){}
+    // Also draw alert markers from threat_summary
+    const threats=d.threat_summary?d.threat_summary.split(';'):[];
+    threats.forEach((t,i)=>{
+      if(!sloc) return;
+      const offset=(i-threats.length/2)*0.05;
+      const m=L.circleMarker([lat+offset,lon+offset*0.7],{radius:12,color:'#ef4444',fillColor:'#ef4444',fillOpacity:0.2,weight:2}).addTo(M);
+      m.bindPopup('<b>'+t.trim()+'</b>');
+      alertMarkers.push(m);
+    });
+  }catch(e){console.log('Sim error:',e)}
 }
 
 function goLive(btn){
