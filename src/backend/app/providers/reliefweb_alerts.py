@@ -105,20 +105,23 @@ class ReliefWebAlertProvider(AlertProvider):
     def __init__(self) -> None:
         self._client = httpx.AsyncClient(
             timeout=15.0,
-            headers={"User-Agent": "CultureShock-Emergency-App/0.2.0"},
+            headers={
+                "User-Agent": "Amygdala-Emergency-App/1.0 (disaster-decision-engine; contact@amygdala.app)",
+                "Accept": "application/json",
+            },
         )
 
     async def get_alerts(self, location: Location, radius_km: float = 500) -> list[Alert]:
         try:
-            resp = await self._client.get(
-                _RELIEFWEB_URL,
-                params={
-                    "appname": "cultureshock",
-                    "preset": "latest",
+            # ReliefWeb: appname in query string, filter body in POST
+            resp = await self._client.post(
+                f"{_RELIEFWEB_URL}?appname=amygdala-emergency",
+                json={
                     "limit": 30,
-                    "fields[include][]": [
-                        "name", "status", "date", "type", "country", "url", "description-html",
-                    ],
+                    "sort": ["date.created:desc"],
+                    "fields": {
+                        "include": ["name", "status", "date", "type", "country", "url"],
+                    },
                 },
             )
             resp.raise_for_status()
@@ -203,9 +206,9 @@ class ReliefWebAlertProvider(AlertProvider):
 
     async def health_check(self) -> bool:
         try:
-            resp = await self._client.get(
-                _RELIEFWEB_URL,
-                params={"appname": "cultureshock", "limit": 1},
+            resp = await self._client.post(
+                f"{_RELIEFWEB_URL}?appname=amygdala-emergency",
+                json={"limit": 1},
                 timeout=10.0,
             )
             return resp.status_code == 200

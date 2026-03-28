@@ -1,8 +1,10 @@
-"""CultureShock API — Emergency advisory service for travelers.
+"""Amygdala — Real-time survival decision engine for travelers.
 
-LEGAL: This service provides ADVISORY information only. All AI-generated
-content includes mandatory disclaimers. See /api/v1/legal/disclaimer for
-the full advisory notice.
+Named after the brain's threat detection center. Aggregates 6+ real-time
+data sources, computes trust-weighted threat assessments, and outputs
+ONE deterministic instruction: SHELTER / STAY / MOVE / EVACUATE / MONITOR.
+
+LEGAL: Advisory information only. See /api/v1/legal/disclaimer.
 """
 
 import logging
@@ -58,14 +60,13 @@ def create_app() -> FastAPI:
         title=settings.app_name,
         version=settings.app_version,
         description=(
-            "Emergency advisory API for travelers. Provides real-time alerts, "
-            "transport status, and AI-generated advisory guidance for emergency "
-            "situations.\n\n"
-            "**IMPORTANT LEGAL NOTICE**: All advisory content provided by this "
-            "API is for INFORMATIONAL purposes only and does not constitute "
-            "professional emergency management, medical, or legal advice. "
-            "Always follow instructions from local authorities and official "
-            "emergency services."
+            "Real-time survival decision engine for travelers. Aggregates "
+            "USGS, GDACS, NASA, FCDO, Meteoalarm, and ReliefWeb data, "
+            "computes trust scores, and outputs ONE deterministic instruction.\n\n"
+            "**IMPORTANT LEGAL NOTICE**: All content is for INFORMATIONAL "
+            "purposes only and does not constitute professional emergency "
+            "management, medical, or legal advice. Always follow instructions "
+            "from local authorities and official emergency services."
         ),
         lifespan=lifespan,
         docs_url="/docs",
@@ -108,7 +109,7 @@ def create_app() -> FastAPI:
             "data_freshness_warning": DATA_FRESHNESS_WARNING,
         }
 
-    # --- Serve the app ---
+    # --- Serve the Amygdala app ---
     @application.get("/", include_in_schema=False)
     async def serve_app():
         return FileResponse(_STATIC_DIR / "app.html")
@@ -116,6 +117,11 @@ def create_app() -> FastAPI:
     @application.get("/test", include_in_schema=False)
     async def serve_test():
         return FileResponse(_STATIC_DIR / "index.html")
+
+    # Service worker must be served from root scope for PWA
+    @application.get("/sw.js", include_in_schema=False)
+    async def serve_sw():
+        return FileResponse(_STATIC_DIR / "sw.js", media_type="application/javascript")
 
     if _STATIC_DIR.exists():
         application.mount("/static", StaticFiles(directory=str(_STATIC_DIR)), name="static")

@@ -9,8 +9,8 @@ class Settings(BaseSettings):
     """Central configuration for CultureShock API."""
 
     # --- App ---
-    app_name: str = "CultureShock API"
-    app_version: str = "0.1.0"
+    app_name: str = "Amygdala API"
+    app_version: str = "1.0.0"
     debug: bool = False
     api_v1_prefix: str = "/api/v1"
 
