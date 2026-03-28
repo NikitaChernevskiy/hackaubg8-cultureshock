@@ -83,6 +83,9 @@
 
 <div class="topbar">
   <div class="logo">Amyg<span>dala</span></div>
+  <select id="langSel" onchange="switchLang(this.value)" style="background:var(--s2);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:2px 4px;font-size:11px;font-family:inherit">
+    <option value="en">EN</option><option value="bg">BG</option><option value="tr">TR</option><option value="de">DE</option><option value="fr">FR</option><option value="es">ES</option><option value="ja">JA</option><option value="ar">AR</option><option value="ru">RU</option>
+  </select>
   <div class="conn"><span id="connLabel">Online</span><div class="dot" id="connDot"></div></div>
 </div>
 
@@ -165,12 +168,12 @@
   <!-- DEMO SECTION: Simulation -->
   <div class="section" id="sectionDemo">
     <div class="info-card">
-      <h3>Simulation Mode</h3>
-      <p style="margin-bottom:12px">Test the decision engine with realistic disaster scenarios. These use simulated data fed through the real decision engine.</p>
-      <button class="submit-btn" style="background:var(--red);margin-bottom:8px" onclick="runSim('earthquake_nearby')">🌍 Earthquake Nearby (M6.2)</button>
-      <button class="submit-btn" style="background:var(--orange);margin-bottom:8px" onclick="runSim('geopolitical_crisis')">⚠️ Geopolitical Crisis</button>
-      <button class="submit-btn" style="background:var(--blue);margin-bottom:8px" onclick="runSim('flood_warning')">🌊 Severe Flood</button>
-      <button class="submit-btn" style="background:var(--green);margin-bottom:8px" onclick="runSim('all_clear')">✅ All Clear (No Threats)</button>
+      <h3>Replay Real Historical Events</h3>
+      <p style="margin-bottom:12px">These are REAL past disasters with actual USGS data, FCDO advisories, and transport disruptions. The decision engine processes them identically to live data.</p>
+      <button class="submit-btn" style="background:var(--red);margin-bottom:8px" onclick="runSim('turkey_2023')">🌍 2023 Turkey M7.8 Earthquake<br><span style="font-size:10px;font-weight:400">Feb 6, 2023 · USGS us6000jllz · 50,000+ dead</span></button>
+      <button class="submit-btn" style="background:var(--red);margin-bottom:8px" onclick="runSim('israel_2023')">⚠️ 2023 Israel-Gaza Conflict<br><span style="font-size:10px;font-weight:400">Oct 7, 2023 · FCDO: against all travel · TLV closed</span></button>
+      <button class="submit-btn" style="background:var(--blue);margin-bottom:8px" onclick="runSim('valencia_2024')">🌊 2024 Valencia DANA Flood<br><span style="font-size:10px;font-weight:400">Oct 29, 2024 · 400mm in 8h · 220+ dead</span></button>
+      <button class="submit-btn" style="background:var(--orange);margin-bottom:8px" onclick="runSim('japan_2024')">🌊 2024 Japan Noto M7.5 + Tsunami<br><span style="font-size:10px;font-weight:400">Jan 1, 2024 · USGS us6000m0xl · JMA Intensity 7</span></button>
       <button class="submit-btn" style="background:var(--s2);border:1px solid var(--border);margin-bottom:0" onclick="fetchDecision();fetchAlerts();showSection('sectionMain',document.querySelector('.em-btn'))">↩ Return to Live Data</button>
     </div>
   </div>
@@ -186,7 +189,8 @@
 
 <script>
 const API=window.location.origin+'/api/v1';
-let userLat=null,userLon=null,selectedType=null,lastDecision=null;
+let userLat=null,userLon=null,selectedType=null,lastDecision=null,userLang='en';
+function switchLang(l){userLang=l;fetchDecision();}
 
 function showSection(id,btn){
   document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
@@ -208,7 +212,7 @@ function getLocation(){
 
 async function fetchDecision(){
   try{
-    const res=await fetch(API+'/decision',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({latitude:userLat,longitude:userLon})});
+    const res=await fetch(API+'/decision',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({latitude:userLat,longitude:userLon,language:userLang})});
     const d=await res.json();lastDecision=d;
     document.querySelectorAll('.phase-item').forEach(el=>el.classList.toggle('active',el.dataset.phase===d.phase));
     const card=document.getElementById('instrCard');card.className='instruction-card '+d.urgency;

@@ -10,8 +10,9 @@ from fastapi import APIRouter
 
 from app.models.common import Location
 from app.models.decision import DecisionRequest, DecisionResponse
-from app.providers.factory import get_ai_provider, get_alert_provider, get_transport_provider
+from app.providers.factory import get_alert_provider, get_transport_provider
 from app.services.decision_service import make_decision
+from app.services.translation_service import translate_instruction
 
 router = APIRouter(prefix="/decision", tags=["Decision Engine"])
 
@@ -25,6 +26,7 @@ router = APIRouter(prefix="/decision", tags=["Decision Engine"])
         "scores, and returns exactly ONE instruction: SHELTER, STAY, MOVE, "
         "EVACUATE, or MONITOR.\n\n"
         "The user should understand what to do in ≤2 seconds.\n\n"
+        "Supports multilingual output via the `language` parameter (ISO 639-1).\n\n"
         "AI is NOT the decision maker — a deterministic rule engine makes "
         "the final call based on trust-weighted multi-source data."
     ),
@@ -52,9 +54,17 @@ async def get_decision(request: DecisionRequest):
     sources = list({a.source.name: a.source for a in alerts}.values())
     sources += list({t.source.name: t.source for t in transport}.values())
 
-    return make_decision(
+    result = make_decision(
         alerts=alerts,
         transport=transport,
         location=location,
         data_sources=sources,
     )
+
+    # Translate if not English
+    if request.language and request.language != "en":
+        result.instruction, result.fallback_instruction = await translate_instruction(
+            result.instruction, result.fallback_instruction, request.language,
+        )
+
+    return result

@@ -28,19 +28,13 @@ from app.models.decision import (
     Urgency,
 )
 from app.models.transport import TransportOption
+from app.services.geo_service import lookup_country
 from app.services.trust_service import compute_trust_score
 
 logger = logging.getLogger(__name__)
 
 # Severity → numeric for comparison
 _SEV_NUM = {"critical": 4, "high": 3, "medium": 2, "low": 1, "info": 0, "none": 0}
-
-# Emergency numbers by country
-_EMERGENCY = {
-    "BG": "112", "TR": "112", "GR": "112", "RO": "112", "RS": "112",
-    "US": "911", "GB": "999", "JP": "110", "IN": "112", "AU": "000",
-    "IL": "100", "UA": "112", "SY": "112", "DEFAULT": "112",
-}
 
 # Lethal threat types → immediate shelter
 _LETHAL_TYPES = {"earthquake", "tsunami", "tornado", "volcanic_eruption"}
@@ -250,9 +244,9 @@ def make_decision(
         if len(threat_descriptions) > 3:
             threat_summary += f" (+{len(threat_descriptions) - 3} more)"
 
-    # --- EMERGENCY NUMBER ---
-    country = location.country or "DEFAULT"
-    emergency = _EMERGENCY.get(country, _EMERGENCY["DEFAULT"])
+    # --- EMERGENCY NUMBER (GPS-based, not hardcoded) ---
+    country_info = lookup_country(location.latitude, location.longitude)
+    emergency = country_info["emergency"]
 
     # --- BUILD RESPONSE ---
     advisory_meta = AdvisoryMeta(
