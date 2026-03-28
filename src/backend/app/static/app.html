@@ -256,9 +256,14 @@ async function sim(s,btn){
       alertMarkers.push(m);
     });
 
-    // Fetch route: use REAL transport API at the sim location
-    // (this gives us actual airports/stations near the event)
-    await fetchRouteToSafety(lat, lon);
+    // Use simulation's historical transport data for route drawing
+    // (live API may return empty/different results for historical locations)
+    const simTransport=d.transport_options||[];
+    let opts=simTransport.filter(t=>t.status!=='closed');
+    if(opts.length===0) opts=simTransport;
+    if(opts.length>0){
+      await drawRoute(lat, lon, opts[0]);
+    }
 
   }catch(e){console.log('Sim error:',e)}
 }

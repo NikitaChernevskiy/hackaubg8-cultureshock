@@ -427,9 +427,8 @@ async def list_scenarios():
 
 @router.post(
     "/{scenario}",
-    response_model=DecisionResponse,
     summary="Replay a real historical disaster through the decision engine",
-    description="Feeds REAL historical event data into the decision engine. Same code path as live data.",
+    description="Feeds REAL historical event data into the decision engine. Same code path as live data. Returns decision + transport options.",
 )
 async def run_simulation(
     scenario: str,
@@ -451,6 +450,13 @@ async def run_simulation(
     sources = list({a.source.name: a.source for a in alerts}.values())
     sources += list({t.source.name: t.source for t in transport}.values())
 
-    return make_decision(
+    decision = make_decision(
         alerts=alerts, transport=transport, location=location, data_sources=sources,
     )
+
+    # Return decision + transport options so the frontend can draw routes
+    # using the simulation's historical transport data (not live API)
+    return {
+        **decision.model_dump(mode="json"),
+        "transport_options": [t.model_dump(mode="json") for t in transport],
+    }
