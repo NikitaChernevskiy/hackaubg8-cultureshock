@@ -4,7 +4,10 @@
 
 ## Team
 - Nikita Chernevskiy
-- *(add teammates here)*
+- Roberto Myftaraga
+- Lisart Mella
+- Sofokli Kaci
+- Mateo Dyrmishi
 
 ## Tech Stack
 *(TBD — waiting for topic announcement)*

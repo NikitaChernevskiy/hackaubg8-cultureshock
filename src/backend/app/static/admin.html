@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Amygdala — Risk Manager Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&family=JetBrains+Mono:wght@500&display=swap');
+        
+        :root {
+            --bg: #020617;
+            --card: #0f172a;
+            --card-hover: #1e293b;
+            --border: #1e293b;
+            --accent: #ef4444;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .glass-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 1.25rem;
+            transition: all 0.2s ease;
+        }
+
+        .stat-value {
+            font-size: 2.25rem;
+            line-height: 2.5rem;
+            font-weight: 900;
+            letter-spacing: -0.025em;
+            font-style: italic;
+        }
+
+        .status-pill {
+            padding: 2px 10px;
+            border-radius: 9999px;
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .mono { font-family: 'JetBrains Mono', monospace; }
+
+        .table-container {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 1.25rem;
+            overflow: hidden;
+        }
+
+        table { width: 100%; border-collapse: separate; border-spacing: 0; }
+        th { 
+            background: #1e293b66; 
+            color: var(--text-muted); 
+            font-weight: 800; 
+            font-size: 10px; 
+            text-transform: uppercase; 
+            letter-spacing: 0.1em;
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--border);
+            text-align: left;
+        }
+        td { 
+            padding: 14px 16px; 
+            border-bottom: 1px solid #1e293b44; 
+            font-size: 13px;
+        }
+        tr:last-child td { border-bottom: none; }
+        tr:hover td { background: rgba(255,255,255,0.02); }
+        
+        .gradient-accent {
+            background: linear-gradient(135deg, #ef4444 0%, #991b1b 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .refresh-btn {
+            background: var(--card);
+            border: 1px solid var(--border);
+            padding: 8px 16px;
+            border-radius: 0.75rem;
+            font-weight: 700;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+        .refresh-btn:hover { background: #334155; transform: translateY(-1px); }
+    </style>
+</head>
+<body class="p-6 lg:p-10">
+
+    <header class="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
+        <div>
+            <div class="flex items-center gap-3 mb-2">
+                <div class="bg-red-600 p-2 rounded-xl">
+                    <i class="fas fa-brain text-white text-sm"></i>
+                </div>
+                <h1 class="text-2xl font-black italic uppercase tracking-tighter">
+                    Amyg<span class="gradient-accent">dala</span>
+                </h1>
+                <span class="bg-white/5 border border-white/10 px-3 py-1 rounded-full text-[10px] font-black uppercase text-red-500 tracking-widest">Risk Manager</span>
+            </div>
+            <p class="text-slate-400 text-xs font-medium uppercase tracking-widest">System Architecture: <span class="text-slate-200">Distributed-B2B</span></p>
+        </div>
+        <button class="refresh-btn" onclick="load()">
+            <i class="fas fa-sync-alt text-[10px]"></i> RELOAD TELEMETRY
+        </button>
+    </header>
+
+    <main class="max-w-7xl mx-auto space-y-10">
+        
+        <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" id="stats">
+            <div class="glass-card p-6 border-l-4 border-l-indigo-500">
+                <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Registered Users</p>
+                <div class="stat-value" id="s-users">-</div>
+            </div>
+            <div class="glass-card p-6 border-l-4 border-l-red-500">
+                <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Total Sent</p>
+                <div class="stat-value" id="s-sent">-</div>
+                <div class="mt-2 text-[10px] font-bold text-slate-400 uppercase" id="s-rate">-</div>
+            </div>
+            <div class="glass-card p-6 border-l-4 border-l-orange-500">
+                <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Success Rate</p>
+                <div class="stat-value" id="s-success">-</div>
+            </div>
+            <div class="glass-card p-6 border-l-4 border-l-green-500">
+                <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Est. Savings (USD)</p>
+                <div class="stat-value text-green-500" id="s-savings">-</div>
+                <div class="mt-1 text-[10px] font-bold text-slate-400 uppercase" id="s-roi">-</div>
+            </div>
+        </section>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="lg:col-span-2 space-y-10">
+                
+                <section>
+                    <div class="flex items-center justify-between px-2 mb-4">
+                        <h2 class="text-xs font-black uppercase tracking-[0.2em] text-slate-500">Recent Notifications</h2>
+                        <div class="h-px bg-slate-800 flex-grow mx-4"></div>
+                    </div>
+                    <div class="table-container shadow-2xl">
+                        <div class="overflow-x-auto">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Time</th>
+                                        <th>User</th>
+                                        <th>Alert Intel</th>
+                                        <th>Urgency</th>
+                                        <th>Channel</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="logBody" class="text-slate-300">
+                                    <tr><td colspan="6" class="text-center py-10 text-slate-500 italic">No activity yet.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <section>
+                    <div class="flex items-center justify-between px-2 mb-4">
+                        <h2 class="text-xs font-black uppercase tracking-[0.2em] text-slate-500">User Registry</h2>
+                        <div class="h-px bg-slate-800 flex-grow mx-4"></div>
+                    </div>
+                    <div class="table-container shadow-2xl">
+                        <div class="overflow-x-auto">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>User ID</th>
+                                        <th>Destination</th>
+                                        <th>Active Channels</th>
+                                        <th>Hits</th>
+                                        <th>Member Since</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="userBody" class="text-slate-300">
+                                    <tr><td colspan="5" class="text-center py-10 text-slate-500 italic">No registered users found.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <aside class="space-y-10">
+                <div>
+                    <h2 class="text-xs font-black uppercase tracking-[0.2em] text-slate-500 mb-4 px-2">Channel Distribution</h2>
+                    <div class="grid grid-cols-2 gap-3" id="channels"></div>
+                </div>
+
+                <div>
+                    <h2 class="text-xs font-black uppercase tracking-[0.2em] text-slate-500 mb-4 px-2">Data Sources Status</h2>
+                    <div class="grid grid-cols-1 gap-2 px-2">
+                        <div class="bg-slate-800/50 border border-slate-700 px-4 py-3 rounded-xl flex items-center justify-between">
+                            <span class="text-[11px] font-bold text-slate-200">USGS</span>
+                            <span class="h-2 w-2 bg-green-500 rounded-full shadow-[0_0_8px_rgba(34,197,94,0.6)]"></span>
+                        </div>
+                        <div class="bg-slate-800/50 border border-slate-700 px-4 py-3 rounded-xl flex items-center justify-between">
+                            <span class="text-[11px] font-bold text-slate-200">GDACS</span>
+                            <span class="h-2 w-2 bg-green-500 rounded-full shadow-[0_0_8px_rgba(34,197,94,0.6)]"></span>
+                        </div>
+                        <div class="bg-slate-800/50 border border-slate-700 px-4 py-3 rounded-xl flex items-center justify-between">
+                            <span class="text-[11px] font-bold text-slate-200">NASA EONET</span>
+                            <span class="h-2 w-2 bg-green-500 rounded-full shadow-[0_0_8px_rgba(34,197,94,0.6)]"></span>
+                        </div>
+                        <div class="bg-slate-800/50 border border-slate-700 px-4 py-3 rounded-xl flex items-center justify-between">
+                            <span class="text-[11px] font-bold text-slate-200">UK FCDO</span>
+                            <span class="h-2 w-2 bg-green-500 rounded-full shadow-[0_0_8px_rgba(34,197,94,0.6)]"></span>
+                        </div>
+                        <div class="bg-slate-800/50 border border-slate-700 px-4 py-3 rounded-xl flex items-center justify-between">
+                            <span class="text-[11px] font-bold text-slate-200">METEOALARM</span>
+                            <span class="h-2 w-2 bg-green-500 rounded-full shadow-[0_0_8px_rgba(34,197,94,0.6)]"></span>
+                        </div>
+                        <div class="bg-slate-800/50 border border-slate-700 px-4 py-3 rounded-xl flex items-center justify-between">
+                            <span class="text-[11px] font-bold text-slate-200">RELIEFWEB</span>
+                            <span class="h-2 w-2 bg-green-500 rounded-full shadow-[0_0_8px_rgba(34,197,94,0.6)]"></span>
+                        </div>
+                        <div class="bg-slate-800/50 border border-slate-700 px-4 py-3 rounded-xl flex items-center justify-between">
+                            <span class="text-[11px] font-bold text-slate-200">OPENSTREETMAP</span>
+                            <span class="h-2 w-2 bg-green-500 rounded-full shadow-[0_0_8px_rgba(34,197,94,0.6)]"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-card p-6 bg-gradient-to-br from-indigo-500/10 to-transparent border-indigo-500/20">
+                    <h3 class="text-[10px] font-black uppercase tracking-widest text-indigo-400 mb-2">Ingestion Intelligence</h3>
+                    <p class="text-xs text-slate-400 leading-relaxed">
+                        Scanning 7 verified global vectors. Data is cross-referenced every 60 seconds for verified directive output.
+                    </p>
+                </div>
+            </aside>
+        </div>
+    </main>
+
+    <script>
+    const A = window.location.origin + '/api/v1';
+
+    async function load() {
+        try {
+            const d = await(await fetch(A + '/admin/dashboard')).json();
+            document.getElementById('s-users').textContent = d.users.total_registered;
+            document.getElementById('s-sent').textContent = d.notifications.total_sent;
+            document.getElementById('s-rate').textContent = `${d.notifications.by_channel.email || 0} EMAIL • ${d.notifications.by_channel.sms || 0} SMS`;
+            document.getElementById('s-success').textContent = d.notifications.success_rate + '%';
+            document.getElementById('s-savings').textContent = '$' + d.roi.estimated_savings_usd.toLocaleString();
+            document.getElementById('s-roi').textContent = 'ROI: ' + d.roi.roi_percentage + '%';
+
+            let ch = '';
+            for (const [k, v] of Object.entries(d.notifications.by_channel)) {
+                ch += `<div class="glass-card p-4"><div class="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">${k}</div><div class="text-xl font-black italic">${v}</div></div>`;
+            }
+            document.getElementById('channels').innerHTML = ch;
+        } catch (e) { console.error(e); }
+
+        try {
+            const logs = await(await fetch(A + '/admin/logs')).json();
+            const logBody = document.getElementById('logBody');
+            if (logs.length > 0) {
+                logBody.innerHTML = logs.map(l => {
+                    const urgencyClass = l.urgency.toLowerCase() === 'high' ? 'bg-red-500/10 text-red-500' : l.urgency.toLowerCase() === 'medium' ? 'bg-orange-500/10 text-orange-500' : 'bg-green-500/10 text-green-500';
+                    return `<tr>
+                        <td class="mono text-[11px] text-slate-500">${new Date(l.timestamp).toLocaleTimeString()}</td>
+                        <td class="font-bold text-slate-200">${l.email}</td>
+                        <td class="text-slate-400 font-medium">${l.alert_title.substring(0, 30)}...</td>
+                        <td><span class="status-pill ${urgencyClass}">${l.urgency}</span></td>
+                        <td class="text-[10px] font-black text-slate-500 uppercase">${l.channel}</td>
+                        <td class="${l.success ? 'text-green-500' : 'text-red-500'} font-bold">${l.success ? '✓ SENT' : '✗ FAIL'}</td>
+                    </tr>`;
+                }).join('');
+            }
+        } catch (e) { }
+
+        try {
+            const users = await(await fetch(A + '/sdk/users')).json();
+            const userBody = document.getElementById('userBody');
+            if (users.length > 0) {
+                userBody.innerHTML = users.map(u => `
+                    <tr>
+                        <td class="mono text-[11px] text-indigo-400">#${u.user_id}</td>
+                        <td class="font-bold text-slate-200">${u.destination || '-'}</td>
+                        <td class="text-slate-500 text-[10px] font-black uppercase">${u.channels.join(' • ')}</td>
+                        <td class="font-black italic text-slate-300">${u.notifications_sent}</td>
+                        <td class="text-slate-500 text-xs">${new Date(u.registered_at).toLocaleDateString()}</td>
+                    </tr>
+                `).join('');
+            }
+        } catch (e) { }
+    }
+
+    load();
+    setInterval(load, 10000);
+    </script>
+</body>
+</html>

@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CultureShock API Tester</title>
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #13131a;
+    --surface2: #1a1a25;
+    --border: #2a2a3a;
+    --text: #e0e0e8;
+    --muted: #8888a0;
+    --accent: #6366f1;
+    --accent-hover: #818cf8;
+    --danger: #ef4444;
+    --warning: #f59e0b;
+    --success: #22c55e;
+    --info: #3b82f6;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+  .container { max-width: 1100px; margin: 0 auto; padding: 20px; }
+  
+  header {
+    text-align: center;
+    padding: 30px 0 20px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 24px;
+  }
+  header h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; }
+  header h1 span { color: var(--accent); }
+  header p { color: var(--muted); font-size: 14px; margin-top: 4px; }
+  
+  .status-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin-bottom: 20px;
+    font-size: 13px;
+  }
+  .status-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--muted);
+    flex-shrink: 0;
+  }
+  .status-dot.ok { background: var(--success); box-shadow: 0 0 8px #22c55e66; }
+  .status-dot.err { background: var(--danger); box-shadow: 0 0 8px #ef444466; }
+  .status-text { flex: 1; }
+  .status-label { color: var(--muted); }
+  
+  .controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+  .control-group {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+  }
+  .control-group h3 {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 12px;
+  }
+  .control-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .control-row:last-child { margin-bottom: 0; }
+  
+  label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+  input, textarea, select {
+    width: 100%;
+    padding: 8px 12px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-size: 14px;
+    font-family: inherit;
+    transition: border-color 0.2s;
+  }
+  input:focus, textarea:focus, select:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+  textarea { resize: vertical; min-height: 60px; }
+  
+  .field { flex: 1; }
+  
+  .actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+  }
+  button {
+    padding: 10px 20px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+  }
+  button:hover { border-color: var(--accent); color: var(--accent); }
+  button:active { transform: scale(0.98); }
+  button.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+  }
+  button.primary:hover { background: var(--accent-hover); }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  
+  .results {
+    display: grid;
+    gap: 16px;
+  }
+  .result-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .result-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .result-meta { color: var(--muted); font-weight: 400; font-size: 12px; }
+  .result-body { padding: 16px; }
+  
+  .threat-badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .threat-critical { background: #ef444433; color: var(--danger); border: 1px solid #ef444466; }
+  .threat-high { background: #f59e0b33; color: var(--warning); border: 1px solid #f59e0b66; }
+  .threat-medium { background: #3b82f633; color: var(--info); border: 1px solid #3b82f666; }
+  .threat-low { background: #22c55e33; color: var(--success); border: 1px solid #22c55e66; }
+  .threat-none { background: #88888833; color: var(--muted); border: 1px solid #88888866; }
+  
+  .advisory-text {
+    padding: 12px 16px;
+    background: var(--surface2);
+    border-radius: 8px;
+    border-left: 3px solid var(--accent);
+    margin: 10px 0;
+    font-size: 14px;
+    line-height: 1.7;
+  }
+  .steps-list {
+    list-style: none;
+    counter-reset: step;
+  }
+  .steps-list li {
+    counter-increment: step;
+    padding: 8px 0 8px 36px;
+    position: relative;
+    font-size: 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  .steps-list li:last-child { border-bottom: none; }
+  .steps-list li::before {
+    content: counter(step);
+    position: absolute;
+    left: 0;
+    width: 24px; height: 24px;
+    background: var(--accent);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  
+  .disclaimer-box {
+    margin-top: 12px;
+    padding: 10px 14px;
+    background: #f59e0b11;
+    border: 1px solid #f59e0b33;
+    border-radius: 6px;
+    font-size: 11px;
+    color: var(--warning);
+    line-height: 1.5;
+  }
+  
+  .json-view {
+    background: var(--surface2);
+    border-radius: 6px;
+    padding: 12px;
+    overflow-x: auto;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 12px;
+    line-height: 1.5;
+    max-height: 400px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  
+  .transport-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 10px;
+    margin-top: 10px;
+  }
+  .transport-card {
+    padding: 12px;
+    background: var(--surface2);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+  }
+  .transport-card h4 { font-size: 14px; margin-bottom: 4px; }
+  .transport-card .type { font-size: 11px; color: var(--muted); text-transform: uppercase; }
+  .transport-card .status-operational { color: var(--success); }
+  .transport-card .status-disrupted { color: var(--warning); }
+  .transport-card .status-closed { color: var(--danger); }
+  
+  .confidence-bar {
+    height: 6px;
+    background: var(--surface2);
+    border-radius: 3px;
+    margin-top: 8px;
+    overflow: hidden;
+  }
+  .confidence-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.6s ease;
+  }
+  
+  .loading { text-align: center; padding: 40px; color: var(--muted); }
+  .loading::after {
+    content: '';
+    display: inline-block;
+    width: 20px; height: 20px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-left: 10px;
+    vertical-align: middle;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  
+  .tab-bar {
+    display: flex;
+    gap: 2px;
+    margin-bottom: 0;
+  }
+  .tab {
+    padding: 8px 16px;
+    font-size: 12px;
+    font-weight: 600;
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+  }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .tab:hover { color: var(--text); }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+  
+  @media (max-width: 700px) {
+    .controls { grid-template-columns: 1fr; }
+    .control-row { flex-direction: column; }
+    .actions { flex-direction: column; }
+    button { width: 100%; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>Culture<span>Shock</span> API Tester</h1>
+    <p>Emergency Advisory API &mdash; Real-time data from USGS, GDACS, OpenStreetMap</p>
+  </header>
+  
+  <div class="status-bar" id="statusBar">
+    <div class="status-dot" id="statusDot"></div>
+    <span class="status-text" id="statusText">Checking API health...</span>
+    <span class="status-label" id="statusVersion"></span>
+  </div>
+  
+  <div class="controls">
+    <div class="control-group">
+      <h3>Location</h3>
+      <div class="control-row">
+        <div class="field">
+          <label>Latitude</label>
+          <input type="number" id="lat" value="42.6977" step="0.001" min="-90" max="90">
+        </div>
+        <div class="field">
+          <label>Longitude</label>
+          <input type="number" id="lon" value="23.3219" step="0.001" min="-180" max="180">
+        </div>
+      </div>
+      <div class="control-row">
+        <div class="field">
+          <label>Preset Locations</label>
+          <select id="presets" onchange="applyPreset()">
+            <option value="">Custom</option>
+            <option value="42.6977,23.3219" selected>Sofia, Bulgaria</option>
+            <option value="41.0082,28.9784">Istanbul, Turkey</option>
+            <option value="35.6762,139.6503">Tokyo, Japan</option>
+            <option value="34.0522,-118.2437">Los Angeles, USA</option>
+            <option value="28.6139,77.2090">New Delhi, India</option>
+            <option value="51.5074,-0.1278">London, UK</option>
+            <option value="-33.8688,151.2093">Sydney, Australia</option>
+          </select>
+        </div>
+      </div>
+      <div class="control-row">
+        <button onclick="useMyLocation()" style="font-size:12px;padding:6px 12px;">Use My GPS</button>
+      </div>
+    </div>
+    
+    <div class="control-group">
+      <h3>Settings</h3>
+      <div class="control-row">
+        <div class="field">
+          <label>Language</label>
+          <select id="language">
+            <option value="en">English</option>
+            <option value="bg">Bulgarian</option>
+            <option value="tr">Turkish</option>
+            <option value="ja">Japanese</option>
+            <option value="es">Spanish</option>
+            <option value="fr">French</option>
+            <option value="de">German</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Search radius (alerts)</label>
+          <select id="radius">
+            <option value="100">100 km</option>
+            <option value="250">250 km</option>
+            <option value="500" selected>500 km</option>
+          </select>
+        </div>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:8px;">Data sources: USGS Earthquakes, GDACS Disasters, OpenStreetMap transport infrastructure, Azure OpenAI (GPT-4o). All real-time, no mock data.</div>
+    </div>
+  </div>
+  
+  <div class="actions">
+    <button class="primary" onclick="callBundle()" id="btnBundle">Emergency Bundle</button>
+    <button onclick="callAlerts()">Alerts</button>
+    <button onclick="callTransport()">Transport</button>
+    <button onclick="callGuidance()">AI Guidance</button>
+    <button onclick="callHealth()">Health Check</button>
+    <button onclick="callDisclaimer()">Legal Disclaimer</button>
+  </div>
+  
+  <div class="results" id="results">
+    <div style="text-align:center;padding:60px 0;color:var(--muted);">
+      Click a button above to test an endpoint
+    </div>
+  </div>
+</div>
+
+<script>
+const API = 'https://cultureshock-api.happywater-e6483408.eastus2.azurecontainerapps.io/api/v1';
+
+function getLat() { return parseFloat(document.getElementById('lat').value); }
+function getLon() { return parseFloat(document.getElementById('lon').value); }
+function getLanguage() { return document.getElementById('language').value; }
+function getRadius() { return parseInt(document.getElementById('radius').value); }
+
+function applyPreset() {
+  const v = document.getElementById('presets').value;
+  if (v) {
+    const [lat, lon] = v.split(',');
+    document.getElementById('lat').value = lat;
+    document.getElementById('lon').value = lon;
+  }
+}
+
+function useMyLocation() {
+  if (!navigator.geolocation) return alert('Geolocation not supported');
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      document.getElementById('lat').value = pos.coords.latitude.toFixed(4);
+      document.getElementById('lon').value = pos.coords.longitude.toFixed(4);
+      document.getElementById('presets').value = '';
+    },
+    err => alert('Could not get location: ' + err.message)
+  );
+}
+
+function showLoading(msg) {
+  document.getElementById('results').innerHTML = `<div class="loading">${msg}</div>`;
+}
+
+function threatClass(level) {
+  return 'threat-' + (level || 'none');
+}
+
+function statusClass(status) {
+  return 'status-' + (status || 'unknown');
+}
+
+function confidenceColor(c) {
+  if (c >= 0.7) return 'var(--success)';
+  if (c >= 0.4) return 'var(--warning)';
+  return 'var(--danger)';
+}
+
+function renderBundle(data, elapsed) {
+  const c = data.advisory_meta?.confidence || 0;
+  return `
+    <div class="result-card">
+      <div class="result-header">
+        <span>Emergency Bundle</span>
+        <span class="result-meta">${elapsed}ms &middot; ${JSON.stringify(data).length} bytes</span>
+      </div>
+      <div class="result-body">
+        <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px;">
+          <span class="threat-badge ${threatClass(data.threat_level)}">${data.threat_level}</span>
+          <span style="font-size:14px;font-weight:600;">${data.action_suggestion?.replace(/_/g, ' ')}</span>
+          <span style="margin-left:auto;font-size:13px;">Emergency: <strong>${data.local_emergency_number || 'N/A'}</strong></span>
+        </div>
+        
+        <div class="advisory-text">${data.advisory_text}</div>
+        
+        <h4 style="margin-top:16px;font-size:13px;color:var(--muted);">PRIORITY STEPS</h4>
+        <ol class="steps-list">
+          ${(data.priority_steps||[]).map(s => `<li>${s}</li>`).join('')}
+        </ol>
+        
+        <h4 style="margin-top:16px;font-size:13px;color:var(--muted);">TRANSPORT OPTIONS</h4>
+        <div class="transport-grid">
+          ${(data.transport||[]).map(t => `
+            <div class="transport-card">
+              <div class="type">${t.type?.replace(/_/g, ' ')}</div>
+              <h4>${t.name}</h4>
+              <div class="${statusClass(t.status)}" style="font-weight:600;font-size:13px;margin:4px 0;">${t.status}</div>
+              <div style="font-size:12px;color:var(--muted);">${t.status_detail}</div>
+              ${t.distance_km ? `<div style="font-size:12px;margin-top:4px;">${t.distance_km} km &middot; ~${t.estimated_travel_minutes} min</div>` : ''}
+            </div>
+          `).join('')}
+        </div>
+        
+        <div style="margin-top:16px;font-size:12px;color:var(--muted);">
+          Confidence: ${(c*100).toFixed(0)}% &middot; Model: ${data.advisory_meta?.ai_model || 'N/A'}
+          <div class="confidence-bar"><div class="confidence-fill" style="width:${c*100}%;background:${confidenceColor(c)};"></div></div>
+        </div>
+        
+        <div class="disclaimer-box">${data.advisory_meta?.disclaimer || ''}</div>
+      </div>
+    </div>
+    
+    <div class="result-card">
+      <div class="result-header">
+        <div class="tab-bar">
+          <button class="tab active" onclick="switchTab(this,'json-tab')">Raw JSON</button>
+        </div>
+      </div>
+      <div class="result-body">
+        <div id="json-tab" class="tab-content active">
+          <div class="json-view">${JSON.stringify(data, null, 2)}</div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderAlerts(data, elapsed) {
+  return `
+    <div class="result-card">
+      <div class="result-header">
+        <span>Alerts for (${data.location?.latitude}, ${data.location?.longitude})</span>
+        <span class="result-meta">${elapsed}ms &middot; ${data.alerts?.length || 0} alerts</span>
+      </div>
+      <div class="result-body">
+        ${(data.alerts||[]).map(a => `
+          <div style="padding:12px;background:var(--surface2);border-radius:8px;margin-bottom:8px;border-left:3px solid ${a.severity==='critical'?'var(--danger)':a.severity==='high'?'var(--warning)':'var(--info)'};">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <strong>${a.title}</strong>
+              <span class="threat-badge ${threatClass(a.severity)}">${a.severity}</span>
+            </div>
+            <div style="font-size:13px;margin-top:6px;color:var(--muted);">${a.description}</div>
+            <div style="font-size:11px;margin-top:4px;color:var(--muted);">Type: ${a.type} &middot; Source: ${a.source?.name} (${a.source?.reliability})</div>
+          </div>
+        `).join('')}
+        <div class="json-view" style="margin-top:12px;">${JSON.stringify(data, null, 2)}</div>
+      </div>
+    </div>
+  `;
+}
+
+function renderTransport(data, elapsed) {
+  return `
+    <div class="result-card">
+      <div class="result-header">
+        <span>Transport Options</span>
+        <span class="result-meta">${elapsed}ms &middot; ${data.options?.length || 0} options</span>
+      </div>
+      <div class="result-body">
+        <div class="transport-grid">
+          ${(data.options||[]).map(t => `
+            <div class="transport-card">
+              <div class="type">${t.type?.replace(/_/g, ' ')}</div>
+              <h4>${t.name}</h4>
+              <div class="${statusClass(t.status)}" style="font-weight:600;font-size:13px;margin:4px 0;">${t.status}</div>
+              <div style="font-size:12px;color:var(--muted);">${t.status_detail}</div>
+              ${t.distance_km ? `<div style="font-size:12px;margin-top:4px;">${t.distance_km} km &middot; ~${t.estimated_travel_minutes} min</div>` : ''}
+            </div>
+          `).join('')}
+        </div>
+        <div class="json-view" style="margin-top:12px;">${JSON.stringify(data, null, 2)}</div>
+      </div>
+    </div>
+  `;
+}
+
+function renderGuidance(data, elapsed) {
+  const c = data.advisory_meta?.confidence || 0;
+  return `
+    <div class="result-card">
+      <div class="result-header">
+        <span>AI Advisory Guidance</span>
+        <span class="result-meta">${elapsed}ms &middot; Model: ${data.advisory_meta?.ai_model || 'N/A'}</span>
+      </div>
+      <div class="result-body">
+        <div style="margin-bottom:12px;">
+          <span style="font-weight:600;">${data.action_suggestion?.replace(/_/g, ' ')}</span>
+          <span style="margin-left:12px;font-size:13px;">Emergency: <strong>${data.local_emergency_number || 'N/A'}</strong></span>
+        </div>
+        <div class="advisory-text">${data.advisory_text}</div>
+        <h4 style="margin-top:16px;font-size:13px;color:var(--muted);">PRIORITY STEPS</h4>
+        <ol class="steps-list">
+          ${(data.priority_steps||[]).map(s => `<li>${s}</li>`).join('')}
+        </ol>
+        <div style="margin-top:12px;font-size:12px;color:var(--muted);">
+          Confidence: ${(c*100).toFixed(0)}%
+          <div class="confidence-bar"><div class="confidence-fill" style="width:${c*100}%;background:${confidenceColor(c)};"></div></div>
+        </div>
+        <div class="disclaimer-box">${data.advisory_meta?.disclaimer || ''}</div>
+        <div class="json-view" style="margin-top:12px;">${JSON.stringify(data, null, 2)}</div>
+      </div>
+    </div>
+  `;
+}
+
+function renderGeneric(title, data, elapsed) {
+  return `
+    <div class="result-card">
+      <div class="result-header">
+        <span>${title}</span>
+        <span class="result-meta">${elapsed}ms</span>
+      </div>
+      <div class="result-body">
+        <div class="json-view">${JSON.stringify(data, null, 2)}</div>
+      </div>
+    </div>
+  `;
+}
+
+function renderError(endpoint, error) {
+  return `
+    <div class="result-card" style="border-color:var(--danger);">
+      <div class="result-header" style="background:#ef444422;">
+        <span style="color:var(--danger);">Error: ${endpoint}</span>
+      </div>
+      <div class="result-body">
+        <div style="color:var(--danger);font-size:14px;">${error}</div>
+      </div>
+    </div>
+  `;
+}
+
+async function apiCall(method, path, body) {
+  const t0 = performance.now();
+  const opts = { method, headers: {} };
+  if (body) {
+    opts.headers['Content-Type'] = 'application/json';
+    opts.body = JSON.stringify(body);
+  }
+  const resp = await fetch(API + path, opts);
+  const data = await resp.json();
+  const elapsed = Math.round(performance.now() - t0);
+  if (!resp.ok) throw new Error(`HTTP ${resp.status}: ${JSON.stringify(data)}`);
+  return { data, elapsed };
+}
+
+async function callBundle() {
+  showLoading('Fetching emergency bundle (AI advisory)...');
+  try {
+    const { data, elapsed } = await apiCall('POST', '/emergency/bundle', {
+      latitude: getLat(), longitude: getLon(),
+      language: getLanguage()
+    });
+    document.getElementById('results').innerHTML = renderBundle(data, elapsed);
+  } catch (e) {
+    document.getElementById('results').innerHTML = renderError('Emergency Bundle', e.message);
+  }
+}
+
+async function callAlerts() {
+  showLoading('Fetching alerts...');
+  try {
+    const { data, elapsed } = await apiCall('GET', `/alerts/region/${getLat()}/${getLon()}`);
+    document.getElementById('results').innerHTML = renderAlerts(data, elapsed);
+  } catch (e) {
+    document.getElementById('results').innerHTML = renderError('Alerts', e.message);
+  }
+}
+
+async function callTransport() {
+  showLoading('Fetching transport options...');
+  try {
+    const { data, elapsed } = await apiCall('GET', `/transport/status/${getLat()}/${getLon()}`);
+    document.getElementById('results').innerHTML = renderTransport(data, elapsed);
+  } catch (e) {
+    document.getElementById('results').innerHTML = renderError('Transport', e.message);
+  }
+}
+
+async function callGuidance() {
+  showLoading('Generating AI advisory guidance...');
+  try {
+    const { data, elapsed } = await apiCall('POST', '/guidance/plan', {
+      latitude: getLat(), longitude: getLon(),
+      language: getLanguage()
+    });
+    document.getElementById('results').innerHTML = renderGuidance(data, elapsed);
+  } catch (e) {
+    document.getElementById('results').innerHTML = renderError('AI Guidance', e.message);
+  }
+}
+
+async function callHealth() {
+  showLoading('Checking API health...');
+  try {
+    const { data, elapsed } = await apiCall('GET', '/health');
+    document.getElementById('results').innerHTML = renderGeneric('Health Check', data, elapsed);
+  } catch (e) {
+    document.getElementById('results').innerHTML = renderError('Health', e.message);
+  }
+}
+
+async function callDisclaimer() {
+  showLoading('Fetching legal disclaimer...');
+  try {
+    const { data, elapsed } = await apiCall('GET', '/legal/disclaimer');
+    document.getElementById('results').innerHTML = renderGeneric('Legal Disclaimer', data, elapsed);
+  } catch (e) {
+    document.getElementById('results').innerHTML = renderError('Disclaimer', e.message);
+  }
+}
+
+// Health check on load
+(async () => {
+  try {
+    const { data } = await apiCall('GET', '/health');
+    document.getElementById('statusDot').className = 'status-dot ok';
+    document.getElementById('statusText').textContent = `API is ${data.status} — all providers ${Object.values(data.providers).every(v=>v==='healthy') ? 'operational' : 'degraded'}`;
+    document.getElementById('statusVersion').textContent = `v${data.version}`;
+  } catch (e) {
+    document.getElementById('statusDot').className = 'status-dot err';
+    document.getElementById('statusText').textContent = 'API unreachable: ' + e.message;
+  }
+})();
+</script>
+</body>
+</html>
