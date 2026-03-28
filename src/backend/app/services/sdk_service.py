@@ -10,6 +10,7 @@ from app.models.sdk import RegisteredUser, SDKRegistration, SDKRegistrationRespo
 from app.providers.factory import get_alert_provider, get_transport_provider
 from app.services.decision_service import make_decision
 from app.services.geo_service import lookup_country
+from app.services.admin_service import log_notification
 from app.services.notify_service import send_alert_email, send_alert_sms
 from app.services.translation_service import translate_instruction
 
@@ -209,6 +210,12 @@ async def check_and_notify_user(user: RegisteredUser) -> dict:
             map_url=map_url,
             emergency_number=decision.local_emergency_number,
         )
+
+    # Log to admin panel
+    if user.email and result.get("email_sent") is not None:
+        log_notification(user.user_id, user.email, decision.threat_summary[:80], decision.action.value, decision.urgency.value, "email", result["email_sent"], situation_briefing)
+    if user.phone and result.get("sms_sent") is not None:
+        log_notification(user.user_id, user.email, decision.threat_summary[:80], decision.action.value, decision.urgency.value, "sms", result["sms_sent"])
 
     # Update user record
     user.last_notified_at = now

@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Amygdala — Admin Panel</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0b0b12;--card:#12121c;--brd:#1e1e30;--t:#e4e4ef;--m:#6b6b85;--acc:#6366f1;--red:#ef4444;--org:#f59e0b;--grn:#22c55e}
+body{font-family:-apple-system,sans-serif;background:var(--bg);color:var(--t);min-height:100vh}
+.top{padding:16px 24px;border-bottom:1px solid var(--brd);display:flex;align-items:center;justify-content:space-between}
+.top h1{font-size:18px;font-weight:800}.top h1 b{color:var(--acc)}
+.top .badge{font-size:10px;background:var(--acc);color:#fff;padding:3px 10px;border-radius:20px;font-weight:700}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;padding:20px 24px}
+.stat{background:var(--card);border:1px solid var(--brd);border-radius:12px;padding:18px}
+.stat .label{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--m);font-weight:700;margin-bottom:6px}
+.stat .val{font-size:28px;font-weight:800}
+.stat .sub{font-size:11px;color:var(--m);margin-top:4px}
+.stat.green .val{color:var(--grn)}.stat.red .val{color:var(--red)}.stat.org .val{color:var(--org)}.stat.acc .val{color:var(--acc)}
+.section{padding:0 24px 20px}
+.section h2{font-size:13px;text-transform:uppercase;letter-spacing:.5px;color:var(--m);font-weight:700;padding:16px 0 10px}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{text-align:left;padding:8px 10px;background:var(--card);color:var(--m);font-size:10px;text-transform:uppercase;letter-spacing:.5px;font-weight:700;border-bottom:1px solid var(--brd)}
+td{padding:8px 10px;border-bottom:1px solid var(--brd)}
+tr:hover{background:var(--card)}
+.tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700}
+.tag.ok{background:#22c55e22;color:var(--grn)}.tag.fail{background:#ef444422;color:var(--red)}
+.tag.high{background:#ef444422;color:var(--red)}.tag.medium{background:#f59e0b22;color:var(--org)}.tag.low{background:#22c55e22;color:var(--grn)}
+.sources{display:flex;flex-wrap:wrap;gap:6px;padding:0 24px 20px}
+.src{padding:6px 12px;background:var(--card);border:1px solid var(--brd);border-radius:8px;font-size:11px;font-weight:600}
+.src .dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--grn);margin-right:6px}
+.refresh{padding:6px 14px;background:var(--card);border:1px solid var(--brd);border-radius:8px;color:var(--t);font-size:11px;cursor:pointer;font-family:inherit;font-weight:600}
+.refresh:active{opacity:.7}
+.empty{text-align:center;padding:40px;color:var(--m);font-size:13px}
+</style>
+</head>
+<body>
+<div class="top">
+  <h1>Amyg<b>dala</b> — Risk Manager</h1>
+  <div style="display:flex;gap:8px;align-items:center">
+    <span class="badge">ADMIN</span>
+    <button class="refresh" onclick="load()">↻ Refresh</button>
+  </div>
+</div>
+
+<div class="grid" id="stats">
+  <div class="stat acc"><div class="label">Registered Users</div><div class="val" id="s-users">-</div></div>
+  <div class="stat green"><div class="label">Alerts Sent</div><div class="val" id="s-sent">-</div><div class="sub" id="s-rate">-</div></div>
+  <div class="stat org"><div class="label">Success Rate</div><div class="val" id="s-success">-</div></div>
+  <div class="stat red"><div class="label">Failed</div><div class="val" id="s-failed">-</div></div>
+  <div class="stat green"><div class="label">Est. Savings (USD)</div><div class="val" id="s-savings">-</div><div class="sub" id="s-roi">-</div></div>
+  <div class="stat acc"><div class="label">Data Sources</div><div class="val" id="s-sources">7</div><div class="sub">All real-time, all free</div></div>
+</div>
+
+<div class="section">
+  <h2>Channel Breakdown</h2>
+  <div class="grid" style="padding:0" id="channels"></div>
+</div>
+
+<div class="section">
+  <h2>Data Sources Status</h2>
+</div>
+<div class="sources" id="srcList"></div>
+
+<div class="section">
+  <h2>Notification Log</h2>
+  <div style="overflow-x:auto">
+    <table>
+      <thead><tr><th>Time</th><th>User</th><th>Alert</th><th>Decision</th><th>Urgency</th><th>Channel</th><th>Status</th></tr></thead>
+      <tbody id="logBody"><tr><td colspan="7" class="empty">No notifications yet. Create a manual alert to test.</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="section">
+  <h2>Registered Users</h2>
+  <div style="overflow-x:auto">
+    <table>
+      <thead><tr><th>ID</th><th>Email</th><th>Channels</th><th>Notifications</th><th>Registered</th></tr></thead>
+      <tbody id="userBody"><tr><td colspan="5" class="empty">No users registered yet.</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+const A=window.location.origin+'/api/v1';
+
+async function load(){
+  // Dashboard stats
+  try{
+    const d=await(await fetch(A+'/admin/dashboard')).json();
+    document.getElementById('s-users').textContent=d.users.total_registered;
+    document.getElementById('s-sent').textContent=d.notifications.total_sent;
+    document.getElementById('s-rate').textContent=`${d.notifications.by_channel.email||0} email, ${d.notifications.by_channel.sms||0} SMS`;
+    document.getElementById('s-success').textContent=d.notifications.success_rate+'%';
+    document.getElementById('s-failed').textContent=d.notifications.failed;
+    document.getElementById('s-savings').textContent='$'+d.roi.estimated_savings_usd.toLocaleString();
+    document.getElementById('s-roi').textContent='ROI: '+d.roi.roi_percentage+'% vs platform cost';
+    document.getElementById('s-sources').textContent=d.data_sources.count;
+
+    // Channels
+    let ch='';
+    for(const[k,v]of Object.entries(d.notifications.by_channel)){
+      ch+=`<div class="stat"><div class="label">${k.toUpperCase()}</div><div class="val">${v}</div></div>`;
+    }
+    // Urgency
+    for(const[k,v]of Object.entries(d.notifications.by_urgency)){
+      ch+=`<div class="stat ${k.toLowerCase()}"><div class="label">${k} Urgency</div><div class="val">${v}</div></div>`;
+    }
+    document.getElementById('channels').innerHTML=ch||'<div class="empty">No data yet</div>';
+
+    // Sources
+    let src='';
+    d.data_sources.sources.forEach(s=>{src+=`<div class="src"><span class="dot"></span>${s}</div>`;});
+    document.getElementById('srcList').innerHTML=src;
+  }catch(e){console.error(e)}
+
+  // Notification log
+  try{
+    const logs=await(await fetch(A+'/admin/logs')).json();
+    if(logs.length===0){
+      document.getElementById('logBody').innerHTML='<tr><td colspan="7" class="empty">No notifications yet.</td></tr>';
+    }else{
+      let h='';
+      logs.forEach(l=>{
+        const t=new Date(l.timestamp).toLocaleTimeString();
+        h+=`<tr><td>${t}</td><td>${l.email}</td><td>${l.alert_title.substring(0,40)}</td><td>${l.decision}</td><td><span class="tag ${l.urgency.toLowerCase()}">${l.urgency}</span></td><td>${l.channel}</td><td><span class="tag ${l.success?'ok':'fail'}">${l.success?'✓ Sent':'✗ Failed'}</span></td></tr>`;
+      });
+      document.getElementById('logBody').innerHTML=h;
+    }
+  }catch(e){}
+
+  // Users
+  try{
+    const users=await(await fetch(A+'/sdk/users')).json();
+    if(users.length===0){
+      document.getElementById('userBody').innerHTML='<tr><td colspan="5" class="empty">No users registered.</td></tr>';
+    }else{
+      let h='';
+      users.forEach(u=>{
+        h+=`<tr><td>${u.user_id}</td><td>${u.destination||'-'}</td><td>${u.channels.join(', ')}</td><td>${u.notifications_sent}</td><td>${new Date(u.registered_at).toLocaleString()}</td></tr>`;
+      });
+      document.getElementById('userBody').innerHTML=h;
+    }
+  }catch(e){}
+}
+
+load();
+setInterval(load,10000); // Auto-refresh every 10s
+</script>
+</body>
+</html>

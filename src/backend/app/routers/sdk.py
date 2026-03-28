@@ -17,6 +17,7 @@ from app.models.alerts import Alert
 from app.models.common import DataSource, Location
 from app.models.sdk import SDKRegistration, SDKRegistrationResponse
 from app.services.decision_service import make_decision
+from app.services.admin_service import log_notification
 from app.services.sdk_service import (
     _generate_situation_briefing,
     _users,
@@ -190,6 +191,10 @@ async def sdk_manual_alert(alert: ManualAlert):
 
         user.notification_count += 1
         user.last_notified_at = now
+        if user.email:
+            log_notification(user.user_id, user.email, alert.title, decision.action.value, decision.urgency.value, "email", email_ok, briefing)
+        if user.phone:
+            log_notification(user.user_id, user.email, alert.title, decision.action.value, decision.urgency.value, "sms", sms_ok)
         notified.append({
             "user_id": user.user_id,
             "email": user.email,

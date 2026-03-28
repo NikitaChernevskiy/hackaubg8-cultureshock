@@ -22,7 +22,7 @@ from app.config import get_settings
 _STATIC_DIR = pathlib.Path(__file__).parent / "static"
 from app.constants import ADVISORY_DISCLAIMER, DATA_FRESHNESS_WARNING, MEDICAL_DISCLAIMER
 from app.middleware.compression import GZIP_MINIMUM_SIZE
-from app.routers import alerts, decision, emergency, guidance, health, notifications, offline, reports, sdk, simulation, transport
+from app.routers import admin, alerts, decision, emergency, guidance, health, notifications, offline, reports, sdk, simulation, transport
 
 logger = logging.getLogger(__name__)
 
@@ -95,6 +95,7 @@ def create_app() -> FastAPI:
     application.include_router(reports.router, prefix=prefix)
     application.include_router(offline.router, prefix=prefix)
     application.include_router(sdk.router, prefix=prefix)
+    application.include_router(admin.router, prefix=prefix)
     application.include_router(simulation.router, prefix=prefix)
 
     # --- Legal disclaimer endpoint (static) ---
@@ -121,6 +122,11 @@ def create_app() -> FastAPI:
     async def serve_map():
         """Navigation map (from email/SMS links)."""
         return FileResponse(_STATIC_DIR / "app.html")
+
+    @application.get("/admin", include_in_schema=False)
+    async def serve_admin():
+        """Admin panel for insurance risk managers."""
+        return FileResponse(_STATIC_DIR / "admin.html")
 
     @application.get("/test", include_in_schema=False)
     async def serve_test():

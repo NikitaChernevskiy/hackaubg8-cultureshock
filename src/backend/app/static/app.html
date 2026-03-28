@@ -71,7 +71,6 @@ body{font-family:-apple-system,sans-serif;background:#0b0b12;color:#e4e4ef}
 
 <div class="bottom">
   <div class="info-row"><span>Sources: <b id="srcs">-</b></span><span>Trust: <b id="trust">-</b></span><span>Phase: <b id="phase">-</b></span></div>
-  <a class="call-btn" id="call" href="tel:112">🆘 Call <span id="enum">112</span></a>
 </div>
 
 <script>
@@ -111,9 +110,7 @@ function renderDecision(d){
   document.getElementById('trust').textContent=Math.round((d.trust_score||0)*100)+'%';
   document.getElementById('srcs').textContent=(d.sources_agreeing||0)+'/'+(d.sources_total||0);
   document.getElementById('phase').textContent=d.phase||'-';
-  const num=d.local_emergency_number||'112';
-  document.getElementById('enum').textContent=num;
-  document.getElementById('call').href='tel:'+num;
+  // Emergency number available in decision response: d.local_emergency_number
 
   // Show nearest safe option on map
   if(d.nearest_safe_option && d.action !== 'MONITOR'){
