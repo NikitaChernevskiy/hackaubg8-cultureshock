@@ -125,9 +125,14 @@ async function fetchRouteToSafety(fromLat, fromLon){
   try{
     const r=await fetch(A+'/transport/status/'+fromLat+'/'+fromLon);
     const d=await r.json();
-    const opts=(d.options||[]).filter(t=>t.status!=='closed');
-    if(opts.length>0) await drawRoute(fromLat, fromLon, opts[0]);
-  }catch(e){console.log('Route fetch failed:',e)}
+    // Try non-closed first, then any option, then all options
+    let opts=(d.options||[]).filter(t=>t.status!=='closed');
+    if(opts.length===0) opts=(d.options||[]);
+    if(opts.length>0){
+      // Pick the nearest one with a reasonable distance
+      await drawRoute(fromLat, fromLon, opts[0]);
+    }
+  }catch(e){console.log('Route fetch error:',e)}
 }
 
 async function drawRoute(fromLat, fromLon, dest){
@@ -204,39 +209,68 @@ async function go(){
   }
 }
 
+let realLat=null,realLon=null; // Store real GPS for returning from sim
+
 async function sim(s,btn){
   document.querySelectorAll('.demo-btn').forEach(b=>b.classList.remove('on'));btn.classList.add('on');
   try{
-    // Get scenario location first
+    // Save real location on first sim
+    if(!realLat){realLat=lat;realLon=lon;}
+
+    // Clear everything
+    clearMarkers();
+    clearRoute();
+
+    // Get scenario location
     const sc=await(await fetch(A+'/simulate/scenarios')).json();
     const sloc=sc[s];
-    if(sloc){
-      // Move map to event location and update lat/lon for routing
-      lat=sloc.default_lat; lon=sloc.default_lon;
-      M.setView([lat,lon],10);
-    }
-    clearMarkers();
+    if(!sloc) return;
+
+    // Move "user" to the event location (fake being there for demo)
+    lat=sloc.default_lat; lon=sloc.default_lon;
+    userMarker.setLatLng([lat,lon]);
+    M.setView([lat,lon],11);
+
     // Run simulation
     const r=await fetch(A+'/simulate/'+s,{method:'POST'});
     const d=await r.json();d.urgency=d.urgency||'HIGH';
-    // Render the decision (this triggers route fetching)
-    renderDecision(d);
-    document.getElementById('ibadge').textContent='⚠ SIM: '+d.action;
-    // Also draw alert markers from threat_summary
+
+    // Show instruction
+    const u=d.urgency||'LOW';
+    const el=document.getElementById('instr');
+    el.className='instr '+(u==='HIGH'?'cr':u==='MEDIUM'?'hi':'lo');
+    document.getElementById('itxt').textContent=d.instruction;
+    document.getElementById('ibadge').textContent='SIM: '+d.action;
+    document.getElementById('isub').textContent=d.fallback_instruction||'';
+    document.getElementById('phase').textContent=d.phase||'-';
+
+    // Draw alert markers from threat_summary
     const threats=d.threat_summary?d.threat_summary.split(';'):[];
     threats.forEach((t,i)=>{
-      if(!sloc) return;
-      const offset=(i-threats.length/2)*0.05;
-      const m=L.circleMarker([lat+offset,lon+offset*0.7],{radius:12,color:'#ef4444',fillColor:'#ef4444',fillOpacity:0.2,weight:2}).addTo(M);
+      const spread=0.03;
+      const angle=(i/Math.max(threats.length,1))*Math.PI*2;
+      const alat=lat+Math.sin(angle)*spread;
+      const alon=lon+Math.cos(angle)*spread;
+      const m=L.circleMarker([alat,alon],{radius:14,color:'#ef4444',fillColor:'#ef4444',fillOpacity:0.25,weight:2}).addTo(M);
       m.bindPopup('<b>'+t.trim()+'</b>');
       alertMarkers.push(m);
     });
+
+    // Fetch route: use REAL transport API at the sim location
+    // (this gives us actual airports/stations near the event)
+    await fetchRouteToSafety(lat, lon);
+
   }catch(e){console.log('Sim error:',e)}
 }
 
 function goLive(btn){
   document.querySelectorAll('.demo-btn').forEach(b=>b.classList.remove('on'));btn.classList.add('on');
-  M.setView([lat,lon],13);go();
+  // Restore real location
+  if(realLat){lat=realLat;lon=realLon;}
+  userMarker.setLatLng([lat,lon]);
+  clearMarkers();clearRoute();
+  M.setView([lat,lon],13);
+  go();
 }
 
 async function init(){
