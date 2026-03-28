@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0a0a0f">
+<title>CultureShock</title>
+<style>
+  :root{--bg:#0a0a0f;--s1:#111118;--s2:#1a1a25;--border:#252535;--text:#e8e8f0;--muted:#7a7a95;--accent:#6366f1;--red:#ef4444;--orange:#f59e0b;--yellow:#eab308;--green:#22c55e;--blue:#3b82f6}
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;min-height:100dvh;overflow-x:hidden}
+  .topbar{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:8px 16px;background:var(--s1);border-bottom:1px solid var(--border);font-size:12px;backdrop-filter:blur(10px)}
+  .topbar .logo{font-weight:800;font-size:15px;letter-spacing:-0.5px}.topbar .logo span{color:var(--accent)}
+  .topbar .conn{display:flex;align-items:center;gap:6px}
+  .topbar .dot{width:8px;height:8px;border-radius:50%;background:var(--green)}.topbar .dot.off{background:var(--red)}
+  .main{padding:52px 0 80px;min-height:100vh;min-height:100dvh}
+  .phase-bar{display:flex;gap:2px;padding:12px 16px;background:var(--s1)}
+  .phase-item{flex:1;text-align:center;padding:6px 4px;border-radius:6px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;background:var(--s2);color:var(--muted);transition:all 0.3s}
+  .phase-item.active{color:#fff}
+  .phase-item.SURVIVE.active{background:var(--red)}.phase-item.STABILIZE.active{background:var(--orange)}
+  .phase-item.EVALUATE.active{background:var(--yellow);color:#000}.phase-item.ESCAPE.active{background:var(--green)}
+  .phase-item.MONITOR.active{background:var(--blue)}
+  .instruction-card{margin:16px;border-radius:16px;overflow:hidden;border:2px solid var(--border);transition:border-color 0.3s}
+  .instruction-card.HIGH{border-color:var(--red);box-shadow:0 0 30px #ef444433}
+  .instruction-card.MEDIUM{border-color:var(--orange);box-shadow:0 0 20px #f59e0b22}
+  .instruction-card.LOW{border-color:var(--green)}
+  .instruction-header{padding:12px 20px;display:flex;align-items:center;justify-content:space-between;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px}
+  .instruction-card.HIGH .instruction-header{background:var(--red);color:#fff}
+  .instruction-card.MEDIUM .instruction-header{background:var(--orange);color:#000}
+  .instruction-card.LOW .instruction-header{background:var(--s2);color:var(--muted)}
+  .instruction-body{padding:24px 20px;background:var(--s1)}
+  .instruction-text{font-size:22px;font-weight:800;line-height:1.3;margin-bottom:12px}
+  .instruction-card.HIGH .instruction-text{color:var(--red)}
+  .instruction-card.MEDIUM .instruction-text{color:var(--orange)}
+  .fallback{font-size:13px;color:var(--muted);padding:8px 12px;background:var(--s2);border-radius:8px;border-left:3px solid var(--border)}
+  .confidence-row{display:flex;align-items:center;gap:8px;margin-top:12px;font-size:11px;color:var(--muted)}
+  .conf-bar{flex:1;height:4px;background:var(--s2);border-radius:2px;overflow:hidden}
+  .conf-fill{height:100%;border-radius:2px;transition:width 0.5s}
+  .threats{margin:0 16px 16px;background:var(--s1);border-radius:12px;border:1px solid var(--border);overflow:hidden}
+  .threats h3{padding:12px 16px 8px;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px}
+  .threat-item{padding:10px 16px;border-top:1px solid var(--border);font-size:13px;display:flex;align-items:center;gap:10px}
+  .threat-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+  .threat-dot.critical{background:var(--red)}.threat-dot.high{background:var(--orange)}.threat-dot.medium{background:var(--yellow)}.threat-dot.low{background:var(--green)}
+  .threat-src{font-size:10px;color:var(--muted);margin-top:2px}
+  .report-section{margin:0 16px 16px;background:var(--s1);border-radius:12px;border:1px solid var(--border);padding:16px}
+  .report-section h3{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px}
+  .report-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+  .report-btn{padding:10px 8px;border:1px solid var(--border);border-radius:8px;background:var(--s2);color:var(--text);font-size:11px;text-align:center;cursor:pointer;transition:all 0.2s;font-family:inherit}
+  .report-btn:active{transform:scale(0.96)}.report-btn.selected{border-color:var(--accent);background:#6366f122}
+  .report-input{width:100%;padding:10px;background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;font-family:inherit;resize:none}
+  .report-input:focus{outline:none;border-color:var(--accent)}
+  .submit-btn{width:100%;padding:12px;border:none;border-radius:8px;background:var(--accent);color:#fff;font-size:14px;font-weight:700;cursor:pointer;margin-top:8px;font-family:inherit}
+  .submit-btn:active{transform:scale(0.98)}.submit-btn:disabled{opacity:0.5}
+  .emergency-bar{position:fixed;bottom:0;left:0;right:0;display:flex;gap:0;background:var(--s1);border-top:1px solid var(--border);z-index:100}
+  .em-btn{flex:1;padding:12px 8px;text-align:center;font-size:11px;font-weight:700;cursor:pointer;transition:background 0.2s;border:none;background:transparent;color:var(--text);font-family:inherit}
+  .em-btn:active{background:var(--s2)}.em-btn .icon{font-size:18px;margin-bottom:2px}.em-btn.active{color:var(--accent)}
+  .loading-screen{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--bg);z-index:200}
+  .loading-screen h1{font-size:28px;font-weight:800;margin-bottom:8px}.loading-screen h1 span{color:var(--accent)}
+  .loading-screen p{color:var(--muted);font-size:14px;margin-bottom:24px}
+  .spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .hidden{display:none!important}
+  .section{display:none}.section.active{display:block}
+  .info-card{margin:0 16px 12px;background:var(--s1);border-radius:12px;border:1px solid var(--border);padding:16px}
+  .info-card h3{font-size:13px;font-weight:700;margin-bottom:8px}
+  .info-card p{font-size:13px;color:var(--muted);line-height:1.6}
+  .info-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px}
+  .info-row:last-child{border:none}.info-label{color:var(--muted)}
+  .disclaimer{margin:0 16px 16px;padding:10px 14px;background:#f59e0b11;border:1px solid #f59e0b33;border-radius:8px;font-size:10px;color:var(--muted);line-height:1.5}
+</style>
+</head>
+<body>
+<div class="loading-screen" id="loadingScreen">
+  <h1>Culture<span>Shock</span></h1>
+  <p>Analyzing your area...</p>
+  <div class="spinner"></div>
+</div>
+
+<div class="topbar">
+  <div class="logo">Culture<span>Shock</span></div>
+  <div class="conn"><span id="connLabel">Online</span><div class="dot" id="connDot"></div></div>
+</div>
+
+<div class="main">
+  <div class="section active" id="sectionMain">
+    <div class="phase-bar" id="phaseBar">
+      <div class="phase-item SURVIVE" data-phase="SURVIVE">Survive</div>
+      <div class="phase-item STABILIZE" data-phase="STABILIZE">Stabilize</div>
+      <div class="phase-item EVALUATE" data-phase="EVALUATE">Evaluate</div>
+      <div class="phase-item ESCAPE" data-phase="ESCAPE">Escape</div>
+    </div>
+    <div class="instruction-card LOW" id="instrCard">
+      <div class="instruction-header">
+        <span id="instrUrgency">CHECKING...</span>
+        <span id="instrAction">--</span>
+      </div>
+      <div class="instruction-body">
+        <div class="instruction-text" id="instrText">Analyzing threats in your area...</div>
+        <div class="fallback" id="instrFallback"></div>
+        <div class="confidence-row">
+          <span>Confidence</span>
+          <div class="conf-bar"><div class="conf-fill" id="confFill" style="width:0%;background:var(--muted)"></div></div>
+          <span id="confPct">--</span>
+        </div>
+        <div class="confidence-row">
+          <span>Trust</span><span id="trustInfo">-- sources</span>
+        </div>
+      </div>
+    </div>
+    <div class="threats" id="threatsList">
+      <h3>Active Threats (<span id="threatCount">0</span>)</h3>
+    </div>
+    <div class="disclaimer">
+      ADVISORY ONLY — This system provides informational guidance based on available data.
+      It does NOT constitute professional emergency management advice. Always follow instructions from
+      local authorities. Call <strong id="emergencyNum">112</strong> in an emergency.
+    </div>
+  </div>
+
+  <div class="section" id="sectionReport">
+    <div class="report-section">
+      <h3>Report an Incident</h3>
+      <div class="report-grid">
+        <div class="report-btn" data-type="earthquake" onclick="selectReportType(this)">🌍 Quake</div>
+        <div class="report-btn" data-type="flood" onclick="selectReportType(this)">🌊 Flood</div>
+        <div class="report-btn" data-type="fire" onclick="selectReportType(this)">🔥 Fire</div>
+        <div class="report-btn" data-type="conflict" onclick="selectReportType(this)">⚠️ Conflict</div>
+        <div class="report-btn" data-type="infrastructure" onclick="selectReportType(this)">🏗️ Infra</div>
+        <div class="report-btn" data-type="other" onclick="selectReportType(this)">📋 Other</div>
+      </div>
+      <textarea class="report-input" id="reportDesc" rows="3" placeholder="What are you seeing? (optional)"></textarea>
+      <button class="submit-btn" id="submitBtn" onclick="submitReport()" disabled>Submit Report</button>
+      <div id="reportResult" style="margin-top:12px;font-size:13px;color:var(--muted)"></div>
+    </div>
+  </div>
+
+  <div class="section" id="sectionInfo">
+    <div class="info-card">
+      <h3>Emergency Numbers</h3>
+      <div class="info-row"><span class="info-label">Emergency</span><span id="infoEmergency">112</span></div>
+      <div class="info-row"><span class="info-label">Police</span><span id="infoPolice">--</span></div>
+      <div class="info-row"><span class="info-label">Ambulance</span><span id="infoAmbulance">--</span></div>
+      <div class="info-row"><span class="info-label">Fire</span><span id="infoFire">--</span></div>
+    </div>
+    <div class="info-card">
+      <h3>Nearby Transport</h3>
+      <div id="transportList"><p style="color:var(--muted)">Loading...</p></div>
+    </div>
+    <div class="info-card">
+      <h3>Data Sources (all real-time)</h3>
+      <p>USGS Earthquakes · GDACS Disasters · NASA EONET · ReliefWeb (UN) · UK FCDO · Meteoalarm (EU) · OpenStreetMap</p>
+    </div>
+    <div class="info-card">
+      <h3>Offline Pack</h3>
+      <p style="margin-bottom:8px">Download essential data for when internet fails:</p>
+      <button class="submit-btn" onclick="downloadOfflinePack()">Download Offline Pack</button>
+    </div>
+  </div>
+</div>
+
+<div class="emergency-bar">
+  <div class="em-btn active" onclick="showSection('sectionMain',this)"><div class="icon">🛡️</div>Status</div>
+  <div class="em-btn" onclick="showSection('sectionReport',this)"><div class="icon">📝</div>Report</div>
+  <div class="em-btn" onclick="showSection('sectionInfo',this)"><div class="icon">ℹ️</div>Info</div>
+  <div class="em-btn" onclick="callEmergency()"><div class="icon">🆘</div><span id="callLabel">Call 112</span></div>
+</div>
+
+<script>
+const API=window.location.origin+'/api/v1';
+let userLat=null,userLon=null,selectedType=null,lastDecision=null;
+
+function showSection(id,btn){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('.em-btn').forEach(b=>b.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+}
+
+function getLocation(){
+  return new Promise(r=>{
+    if(!navigator.geolocation){r({lat:42.01,lon:23.10});return}
+    navigator.geolocation.getCurrentPosition(
+      p=>r({lat:p.coords.latitude,lon:p.coords.longitude}),
+      ()=>r({lat:42.01,lon:23.10}),
+      {timeout:5000,maximumAge:60000}
+    );
+  });
+}
+
+async function fetchDecision(){
+  try{
+    const res=await fetch(API+'/decision',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({latitude:userLat,longitude:userLon})});
+    const d=await res.json();lastDecision=d;
+    document.querySelectorAll('.phase-item').forEach(el=>el.classList.toggle('active',el.dataset.phase===d.phase));
+    const card=document.getElementById('instrCard');card.className='instruction-card '+d.urgency;
+    document.getElementById('instrUrgency').textContent=d.urgency+' URGENCY';
+    document.getElementById('instrAction').textContent=d.action;
+    document.getElementById('instrText').textContent=d.instruction;
+    document.getElementById('instrFallback').textContent='Fallback: '+d.fallback_instruction;
+    const pct=Math.round(d.confidence*100);
+    document.getElementById('confFill').style.width=pct+'%';
+    document.getElementById('confFill').style.background=pct>70?'var(--green)':pct>40?'var(--yellow)':'var(--red)';
+    document.getElementById('confPct').textContent=pct+'%';
+    document.getElementById('trustInfo').textContent=d.sources_agreeing+' of '+d.sources_total+' sources agree';
+    const num=d.local_emergency_number||'112';
+    document.getElementById('emergencyNum').textContent=num;
+    document.getElementById('callLabel').textContent='Call '+num;
+    document.getElementById('infoEmergency').textContent=num;
+  }catch(e){
+    document.getElementById('instrText').textContent='CONNECTION LOST — use offline rules. Stay safe.';
+    document.getElementById('connDot').classList.add('off');
+    document.getElementById('connLabel').textContent='Offline';
+  }
+}
+
+async function fetchAlerts(){
+  try{
+    const res=await fetch(API+'/alerts/region/'+userLat+'/'+userLon+'?radius_km=500');
+    const data=await res.json();const alerts=data.alerts||[];
+    document.getElementById('threatCount').textContent=alerts.length;
+    let h='<h3>Active Threats ('+alerts.length+')</h3>';
+    alerts.slice(0,10).forEach(a=>{
+      h+='<div class="threat-item"><div class="threat-dot '+a.severity+'"></div><div><div>'+a.title.substring(0,70)+'</div><div class="threat-src">'+a.source.name+'</div></div></div>';
+    });
+    if(alerts.length>10)h+='<div class="threat-item" style="color:var(--muted);font-size:12px">+'+(alerts.length-10)+' more</div>';
+    document.getElementById('threatsList').innerHTML=h;
+  }catch(e){}
+}
+
+async function fetchTransport(){
+  try{
+    const res=await fetch(API+'/transport/status/'+userLat+'/'+userLon);
+    const data=await res.json();let h='';
+    (data.options||[]).slice(0,5).forEach(t=>{h+='<div class="info-row"><span class="info-label">'+t.name.substring(0,30)+'</span><span>'+t.distance_km+' km</span></div>';});
+    document.getElementById('transportList').innerHTML=h||'<p style="color:var(--muted)">None found nearby</p>';
+  }catch(e){}
+}
+
+function selectReportType(el){
+  document.querySelectorAll('.report-btn').forEach(b=>b.classList.remove('selected'));
+  el.classList.add('selected');selectedType=el.dataset.type;
+  document.getElementById('submitBtn').disabled=false;
+}
+
+async function submitReport(){
+  if(!selectedType)return;const btn=document.getElementById('submitBtn');
+  btn.disabled=true;btn.textContent='Submitting...';
+  try{
+    const res=await fetch(API+'/reports',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({latitude:userLat,longitude:userLon,report_type:selectedType,description:document.getElementById('reportDesc').value||'No description',severity_estimate:'unknown',device_id:localStorage.getItem('did')||''})});
+    const d=await res.json();
+    document.getElementById('reportResult').innerHTML=d.accepted?'<span style="color:var(--green)">✓ Report submitted. '+d.reports_in_area+' reports in your area.</span>':'<span style="color:var(--red)">Rate limited. Try later.</span>';
+  }catch(e){document.getElementById('reportResult').innerHTML='<span style="color:var(--red)">No connection</span>';}
+  btn.textContent='Submit Report';btn.disabled=false;
+}
+
+async function downloadOfflinePack(){
+  try{
+    const res=await fetch(API+'/offline/pack/BG');const d=await res.json();
+    localStorage.setItem('offline_pack',JSON.stringify(d));
+    alert('Offline pack for '+d.country_name+' saved. Basic features work without internet.');
+    if(d.emergency){
+      document.getElementById('infoPolice').textContent=d.emergency.police||'--';
+      document.getElementById('infoAmbulance').textContent=d.emergency.ambulance||'--';
+      document.getElementById('infoFire').textContent=d.emergency.fire||'--';
+    }
+  }catch(e){alert('Download failed.');}
+}
+
+function callEmergency(){window.location.href='tel:'+(document.getElementById('emergencyNum').textContent||'112');}
+
+async function init(){
+  if(!localStorage.getItem('did'))localStorage.setItem('did','d-'+Math.random().toString(36).substr(2,9));
+  const loc=await getLocation();userLat=loc.lat;userLon=loc.lon;
+  await Promise.all([fetchDecision(),fetchAlerts(),fetchTransport()]);
+  document.getElementById('loadingScreen').classList.add('hidden');
+  setInterval(()=>{fetchDecision();fetchAlerts();},60000);
+}
+init();
+</script>
+</body>
+</html>

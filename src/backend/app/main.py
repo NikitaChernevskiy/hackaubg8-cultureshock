@@ -20,7 +20,7 @@ from app.config import get_settings
 _STATIC_DIR = pathlib.Path(__file__).parent / "static"
 from app.constants import ADVISORY_DISCLAIMER, DATA_FRESHNESS_WARNING, MEDICAL_DISCLAIMER
 from app.middleware.compression import GZIP_MINIMUM_SIZE
-from app.routers import alerts, emergency, guidance, health, notifications, transport
+from app.routers import alerts, decision, emergency, guidance, health, notifications, offline, reports, transport
 
 logger = logging.getLogger(__name__)
 
@@ -84,12 +84,15 @@ def create_app() -> FastAPI:
 
     # --- Routers ---
     prefix = settings.api_v1_prefix
+    application.include_router(decision.router, prefix=prefix)   # THE primary endpoint
     application.include_router(health.router, prefix=prefix)
     application.include_router(emergency.router, prefix=prefix)
     application.include_router(alerts.router, prefix=prefix)
     application.include_router(transport.router, prefix=prefix)
     application.include_router(guidance.router, prefix=prefix)
     application.include_router(notifications.router, prefix=prefix)
+    application.include_router(reports.router, prefix=prefix)
+    application.include_router(offline.router, prefix=prefix)
 
     # --- Legal disclaimer endpoint (static) ---
     @application.get(
@@ -105,9 +108,13 @@ def create_app() -> FastAPI:
             "data_freshness_warning": DATA_FRESHNESS_WARNING,
         }
 
-    # --- Serve frontend testing UI ---
+    # --- Serve the app ---
     @application.get("/", include_in_schema=False)
-    async def serve_frontend():
+    async def serve_app():
+        return FileResponse(_STATIC_DIR / "app.html")
+
+    @application.get("/test", include_in_schema=False)
+    async def serve_test():
         return FileResponse(_STATIC_DIR / "index.html")
 
     if _STATIC_DIR.exists():

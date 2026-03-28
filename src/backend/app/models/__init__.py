@@ -6,3 +6,6 @@ from .transport import *  # noqa: F401,F403
 from .guidance import *  # noqa: F401,F403
 from .emergency import *  # noqa: F401,F403
 from .notifications import *  # noqa: F401,F403
+from .decision import *  # noqa: F401,F403
+from .reports import *  # noqa: F401,F403
+from .offline import *  # noqa: F401,F403
