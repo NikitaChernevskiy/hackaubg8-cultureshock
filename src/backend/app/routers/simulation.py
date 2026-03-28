@@ -276,7 +276,124 @@ def _japan_2024_transport(lat: float, lon: float) -> list[TransportOption]:
     ]
 
 
+# ============================================================
+# SCENARIO 5: Dubai Geopolitical Crisis — Missile Strike
+# Scenario: Military strike near Dubai. Airspace closed.
+# Based on real threat patterns from Gulf region tensions.
+# FCDO would issue immediate advisory, NOTAM closes airspace,
+# airlines divert, embassies issue shelter-in-place.
+# ============================================================
+def _dubai_crisis_alerts(lat: float, lon: float) -> list[Alert]:
+    return [
+        Alert(
+            id="fcdo-uae-crisis", type="geopolitical", severity="critical",
+            title="FCDO advises against ALL travel — UAE",
+            description=(
+                "UK Foreign Office advises against all travel to the UAE following "
+                "confirmed military strikes in the region. Multiple explosions reported "
+                "near Jebel Ali port area. Situation rapidly evolving."
+            ),
+            issued_at=datetime(2026, 3, 28, 18, 0, tzinfo=timezone.utc),
+            location=Location(latitude=25.20, longitude=55.27), radius_km=0,
+            source=_src("UK FCDO Travel Advice", "https://www.gov.uk/foreign-travel-advice/united-arab-emirates"),
+            official_url="https://www.gov.uk/foreign-travel-advice/united-arab-emirates",
+        ),
+        Alert(
+            id="notam-uae-airspace", type="geopolitical", severity="critical",
+            title="UAE airspace CLOSED — all flights grounded",
+            description=(
+                "NOTAM issued: UAE FIR (OMAE) closed to all civil aviation effective "
+                "immediately. All departures suspended. Inbound flights diverted to "
+                "Muscat (MCT) and Bahrain (BAH). Duration: indefinite."
+            ),
+            issued_at=datetime(2026, 3, 28, 18, 5, tzinfo=timezone.utc),
+            location=Location(latitude=25.25, longitude=55.36), radius_km=0,
+            source=_src("ICAO NOTAM System"),
+            official_url="",
+        ),
+        Alert(
+            id="explosion-jebel-ali", type="terrorism", severity="critical",
+            title="Multiple explosions reported — Jebel Ali area, Dubai",
+            description=(
+                "Confirmed explosions near Jebel Ali Free Zone. Cause: military strike. "
+                "Emergency services responding. Residents advised to stay indoors, "
+                "away from windows. Do not approach the affected area."
+            ),
+            issued_at=datetime(2026, 3, 28, 17, 55, tzinfo=timezone.utc),
+            location=Location(latitude=25.01, longitude=55.06), radius_km=8,
+            source=_src("Dubai Civil Defence"),
+            official_url="",
+        ),
+        Alert(
+            id="embassy-shelter", type="civil_unrest", severity="high",
+            title="US Embassy Dubai — shelter in place advisory",
+            description=(
+                "The U.S. Embassy in Abu Dhabi and Consulate General in Dubai advise "
+                "all U.S. citizens to shelter in place until further notice. Avoid "
+                "all non-essential movement. Monitor official channels."
+            ),
+            issued_at=datetime(2026, 3, 28, 18, 10, tzinfo=timezone.utc),
+            location=Location(latitude=25.23, longitude=55.28), radius_km=5,
+            source=_src("U.S. Embassy UAE"),
+            official_url="",
+        ),
+        Alert(
+            id="gdacs-conflict-gulf", type="geopolitical", severity="high",
+            title="GDACS — Armed conflict alert, Persian Gulf region",
+            description=(
+                "GDACS elevated alert level for the Persian Gulf region. "
+                "Military activity confirmed. Shipping lanes may be affected. "
+                "Cross-border escalation risk: HIGH."
+            ),
+            issued_at=datetime(2026, 3, 28, 18, 15, tzinfo=timezone.utc),
+            location=Location(latitude=25.5, longitude=55.5), radius_km=50,
+            source=_src("GDACS", "https://www.gdacs.org"),
+            official_url="",
+        ),
+    ]
+
+def _dubai_crisis_transport(lat: float, lon: float) -> list[TransportOption]:
+    return [
+        TransportOption(
+            id="dxb-airport", type="airport", name="Dubai International Airport (DXB)",
+            location=Location(latitude=25.25, longitude=55.36),
+            status="closed", status_detail="All operations suspended. Airspace closed by NOTAM.",
+            distance_km=14, estimated_travel_minutes=999,
+            source=_src("Dubai Airports"), last_updated=datetime(2026, 3, 28, 18, 5, tzinfo=timezone.utc),
+        ),
+        TransportOption(
+            id="dwc-airport", type="airport", name="Al Maktoum International (DWC)",
+            location=Location(latitude=24.90, longitude=55.16),
+            status="closed", status_detail="Closed. Near Jebel Ali impact zone.",
+            distance_km=35, estimated_travel_minutes=999,
+            source=_src("Dubai Airports"), last_updated=datetime(2026, 3, 28, 18, 5, tzinfo=timezone.utc),
+        ),
+        TransportOption(
+            id="mct-airport", type="airport", name="Muscat International Airport (MCT)",
+            location=Location(latitude=23.59, longitude=58.28),
+            status="operational", status_detail="Receiving diverted flights. 4-5h drive from Dubai.",
+            distance_km=450, estimated_travel_minutes=300,
+            source=_src("Oman Airports"), last_updated=datetime(2026, 3, 28, 18, 30, tzinfo=timezone.utc),
+        ),
+        TransportOption(
+            id="dubai-metro", type="train_station", name="Dubai Metro (Red Line)",
+            location=Location(latitude=25.23, longitude=55.28),
+            status="disrupted", status_detail="Service suspended between Jebel Ali and Ibn Battuta stations.",
+            distance_km=2, estimated_travel_minutes=5,
+            source=_src("RTA Dubai"), last_updated=datetime(2026, 3, 28, 18, 10, tzinfo=timezone.utc),
+        ),
+    ]
+
+
 _SCENARIOS: dict[str, dict] = {
+    "dubai_crisis": {
+        "name": "Dubai Geopolitical Crisis — Military Strike",
+        "date": "March 28, 2026 (simulated)",
+        "location": "Dubai, UAE (25.20°N, 55.27°E)",
+        "description": "Military strike near Jebel Ali. UAE airspace closed. FCDO: against all travel. DXB/DWC airports shut. Embassy shelter-in-place.",
+        "default_lat": 25.20, "default_lon": 55.27,
+        "alerts": _dubai_crisis_alerts, "transport": _dubai_crisis_transport,
+    },
     "turkey_2023": {
         "name": "2023 Turkey-Syria Earthquake (M7.8 + M7.5)",
         "date": "February 6, 2023",
