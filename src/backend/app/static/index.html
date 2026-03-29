@@ -390,6 +390,82 @@
     <button onclick="callHealth()">Health Check</button>
     <button onclick="callDisclaimer()">Legal Disclaimer</button>
   </div>
+
+  <!-- SDK: Register User + Create Alert -->
+  <div class="controls" style="margin-top:20px;">
+    <div class="control-group" style="border-color:var(--accent);">
+      <h3 style="color:var(--accent);">Register Traveler</h3>
+      <div class="control-row">
+        <div class="field">
+          <label>Email *</label>
+          <input type="email" id="reg-email" placeholder="traveler@example.com">
+        </div>
+        <div class="field">
+          <label>Phone (E.164)</label>
+          <input type="text" id="reg-phone" placeholder="+359888123456">
+        </div>
+      </div>
+      <div class="control-row">
+        <div class="field">
+          <label>Destination Name</label>
+          <input type="text" id="reg-dest" placeholder="Istanbul, Turkey">
+        </div>
+        <div class="field">
+          <label>Partner ID</label>
+          <input type="text" id="reg-partner" value="demo-insurer">
+        </div>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin:8px 0 4px;">Destination coordinates = Location fields above</div>
+      <button class="primary" onclick="registerUser()" style="margin-top:6px;width:100%;">Register User</button>
+      <div id="reg-result" style="font-size:12px;margin-top:8px;color:var(--success);"></div>
+    </div>
+
+    <div class="control-group" style="border-color:var(--danger);">
+      <h3 style="color:var(--danger);">Create Test Alert</h3>
+      <div class="control-row">
+        <div class="field">
+          <label>Alert Title *</label>
+          <input type="text" id="alert-title" placeholder="M6.5 Earthquake near Istanbul" value="M6.5 Earthquake — Test Alert">
+        </div>
+      </div>
+      <div class="control-row">
+        <div class="field">
+          <label>Type</label>
+          <select id="alert-type">
+            <option value="earthquake">Earthquake</option>
+            <option value="flood">Flood</option>
+            <option value="wildfire">Wildfire</option>
+            <option value="geopolitical">Geopolitical</option>
+            <option value="terrorism">Terrorism</option>
+            <option value="tsunami">Tsunami</option>
+            <option value="hurricane">Hurricane</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Severity</label>
+          <select id="alert-severity">
+            <option value="critical">Critical</option>
+            <option value="high">High</option>
+            <option value="medium">Medium</option>
+            <option value="low">Low</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Radius (km)</label>
+          <input type="number" id="alert-radius" value="500" min="1">
+        </div>
+      </div>
+      <div class="control-row">
+        <div class="field">
+          <label>Description</label>
+          <textarea id="alert-desc" rows="2" placeholder="Detailed description of the event..."></textarea>
+        </div>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin:8px 0 4px;">Alert location = Location fields above. Sends real email/SMS to all registered users in radius.</div>
+      <button onclick="createAlert()" style="margin-top:6px;width:100%;border-color:var(--danger);color:var(--danger);">🚨 Create Alert &amp; Notify Users</button>
+      <div id="alert-result" style="font-size:12px;margin-top:8px;"></div>
+    </div>
+  </div>
   
   <div class="results" id="results">
     <div style="text-align:center;padding:60px 0;color:var(--muted);">
@@ -689,6 +765,57 @@ async function callDisclaimer() {
     document.getElementById('results').innerHTML = renderGeneric('Legal Disclaimer', data, elapsed);
   } catch (e) {
     document.getElementById('results').innerHTML = renderError('Disclaimer', e.message);
+  }
+}
+
+async function registerUser() {
+  const email = document.getElementById('reg-email').value.trim();
+  if (!email) return alert('Email is required');
+  const res = document.getElementById('reg-result');
+  res.style.color = 'var(--muted)';
+  res.textContent = 'Registering...';
+  try {
+    const { data } = await apiCall('POST', '/sdk/register', {
+      email: email,
+      phone: document.getElementById('reg-phone').value.trim(),
+      destination_lat: getLat(),
+      destination_lon: getLon(),
+      destination_name: document.getElementById('reg-dest').value.trim(),
+      partner_id: document.getElementById('reg-partner').value.trim(),
+      language: getLanguage(),
+      gdpr_consent: true
+    });
+    res.style.color = 'var(--success)';
+    res.textContent = `✓ Registered! User ID: ${data.user_id} — Channels: ${data.channels.join(', ')}`;
+  } catch (e) {
+    res.style.color = 'var(--danger)';
+    res.textContent = '✗ ' + e.message;
+  }
+}
+
+async function createAlert() {
+  const title = document.getElementById('alert-title').value.trim();
+  if (!title) return alert('Alert title is required');
+  const res = document.getElementById('alert-result');
+  res.style.color = 'var(--muted)';
+  res.textContent = 'Creating alert & notifying users...';
+  try {
+    const { data, elapsed } = await apiCall('POST', '/sdk/alert', {
+      lat: getLat(),
+      lon: getLon(),
+      type: document.getElementById('alert-type').value,
+      severity: document.getElementById('alert-severity').value,
+      title: title,
+      description: document.getElementById('alert-desc').value.trim(),
+      radius_km: parseInt(document.getElementById('alert-radius').value) || 500
+    });
+    res.style.color = 'var(--success)';
+    res.innerHTML = `✓ Alert created! Decision: <strong>${data.decision}</strong> (${data.urgency}) — ${data.users_notified} users notified in ${elapsed}ms`;
+    // Also show full response below
+    document.getElementById('results').innerHTML = renderGeneric('Alert Result', data, elapsed);
+  } catch (e) {
+    res.style.color = 'var(--danger)';
+    res.textContent = '✗ ' + e.message;
   }
 }
 

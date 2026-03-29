@@ -115,9 +115,14 @@
             </div>
             <p class="text-slate-400 text-xs font-medium uppercase tracking-widest">System Architecture: <span class="text-slate-200">Distributed-B2B</span></p>
         </div>
-        <button class="refresh-btn" onclick="load()">
-            <i class="fas fa-sync-alt text-[10px]"></i> RELOAD TELEMETRY
-        </button>
+        <div class="flex gap-3">
+            <button class="refresh-btn" onclick="seedDemo()" style="border-color:#6366f1;color:#a5b4fc;">
+                <i class="fas fa-database text-[10px]"></i> SEED DEMO DATA
+            </button>
+            <button class="refresh-btn" onclick="load()">
+                <i class="fas fa-sync-alt text-[10px]"></i> RELOAD TELEMETRY
+            </button>
+        </div>
     </header>
 
     <main class="max-w-7xl mx-auto space-y-10">
@@ -250,6 +255,13 @@
 
     <script>
     const A = window.location.origin + '/api/v1';
+
+    async function seedDemo() {
+        try {
+            await fetch(A + '/admin/seed-demo', { method: 'POST' });
+            await load();
+        } catch (e) { console.error(e); }
+    }
 
     async function load() {
         try {

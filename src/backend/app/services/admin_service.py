@@ -99,3 +99,75 @@ def get_dashboard_stats() -> dict:
 def get_notification_log(limit: int = 50) -> list[dict]:
     """Get recent notification log entries."""
     return list(reversed(_notification_log[-limit:]))
+
+
+def seed_demo_data() -> dict:
+    """Populate admin panel with realistic demo data for presentations."""
+    from datetime import timedelta
+    from app.models.sdk import RegisteredUser
+    from app.services.sdk_service import _users
+
+    now = datetime.now(timezone.utc)
+
+    # --- Seed demo users ---
+    demo_users = [
+        ("demo-001", "anna.mueller@allianz.de", "+4917612345678", 37.22, 37.01, "Kahramanmaraş, Turkey", "de", "allianz-de"),
+        ("demo-002", "james.smith@mondialcare.co.uk", "+447911123456", 24.45, 54.65, "Abu Dhabi, UAE", "en", "mondial-care"),
+        ("demo-003", "sofia.ivanova@euroins.bg", "+359888765432", 39.47, -0.38, "Valencia, Spain", "bg", "euroins-bg"),
+        ("demo-004", "tanaka.yuki@tokio-marine.jp", "+818012345678", 37.50, 137.24, "Ishikawa, Japan", "ja", "tokio-marine"),
+        ("demo-005", "carlos.garcia@mapfre.es", "+34612345678", 32.09, 34.78, "Tel Aviv, Israel", "es", "mapfre-es"),
+        ("demo-006", "marie.dupont@axa.fr", "+33612345678", 41.01, 28.98, "Istanbul, Turkey", "fr", "axa-fr"),
+    ]
+
+    for uid, email, phone, lat, lon, dest, lang, partner in demo_users:
+        if uid not in _users:
+            _users[uid] = RegisteredUser(
+                user_id=uid, email=email, phone=phone,
+                destination_lat=lat, destination_lon=lon,
+                destination_name=dest, language=lang, partner_id=partner,
+                registered_at=now - timedelta(hours=12),
+                notification_count=0,
+            )
+
+    # --- Seed demo notification log ---
+    demo_logs = [
+        (now - timedelta(minutes=45), "demo-001", "anna.mueller@allianz.de", "M7.8 Earthquake — Kahramanmaraş, Turkey", "SHELTER", "HIGH", "email", True,
+         "A magnitude 7.8 earthquake struck near your destination. Take cover immediately."),
+        (now - timedelta(minutes=44), "demo-001", "anna.mueller@allianz.de", "M7.8 Earthquake — Kahramanmaraş, Turkey", "SHELTER", "HIGH", "sms", True, ""),
+        (now - timedelta(minutes=30), "demo-002", "james.smith@mondialcare.co.uk", "Drone strike on ADNOC depot — Abu Dhabi", "EVACUATE", "HIGH", "email", True,
+         "Houthi drone strike on ADNOC fuel depot. Missiles intercepted near airport. Consider departing via Dubai."),
+        (now - timedelta(minutes=29), "demo-002", "james.smith@mondialcare.co.uk", "Drone strike on ADNOC depot — Abu Dhabi", "EVACUATE", "HIGH", "sms", True, ""),
+        (now - timedelta(minutes=20), "demo-003", "sofia.ivanova@euroins.bg", "DANA extreme rainfall — Valencia", "STAY", "HIGH", "email", True,
+         "400mm of rain in 8 hours. Flash flooding across Valencia. Do not attempt to drive."),
+        (now - timedelta(minutes=19), "demo-003", "sofia.ivanova@euroins.bg", "DANA extreme rainfall — Valencia", "STAY", "HIGH", "sms", False, ""),
+        (now - timedelta(minutes=15), "demo-004", "tanaka.yuki@tokio-marine.jp", "M7.5 Earthquake — Noto Peninsula", "SHELTER", "HIGH", "email", True,
+         "Major earthquake and tsunami warning on the Sea of Japan coast. Move to high ground."),
+        (now - timedelta(minutes=14), "demo-004", "tanaka.yuki@tokio-marine.jp", "Tsunami Warning — Sea of Japan", "SHELTER", "HIGH", "sms", True, ""),
+        (now - timedelta(minutes=10), "demo-005", "carlos.garcia@mapfre.es", "FCDO advises against ALL travel — Israel", "EVACUATE", "HIGH", "email", True,
+         "Large-scale security incident. Ben Gurion Airport closed. Consider Haifa Port to Cyprus."),
+        (now - timedelta(minutes=5), "demo-006", "marie.dupont@axa.fr", "M4.2 Earthquake near Istanbul", "MONITOR", "MEDIUM", "email", True,
+         "Minor earthquake detected 80km from Istanbul. No immediate danger but stay alert."),
+    ]
+
+    _notification_log.clear()
+    for ts, uid, email, title, action, urgency, channel, success, briefing in demo_logs:
+        _notification_log.append({
+            "timestamp": ts.isoformat(),
+            "user_id": uid,
+            "email": email,
+            "alert_title": title,
+            "decision": action,
+            "urgency": urgency,
+            "channel": channel,
+            "success": success,
+            "briefing": briefing[:200],
+        })
+
+    # Update user notification counts
+    for uid in _users:
+        count = sum(1 for l in _notification_log if l["user_id"] == uid)
+        _users[uid].notification_count = count
+        if count:
+            _users[uid].last_notified_at = now
+
+    return {"seeded_users": len(demo_users), "seeded_notifications": len(demo_logs)}
