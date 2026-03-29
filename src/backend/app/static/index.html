@@ -424,6 +424,19 @@
       <h3 style="color:var(--danger);">Create Test Alert</h3>
       <div class="control-row">
         <div class="field">
+          <label>Disaster Latitude</label>
+          <input type="number" id="alert-lat" value="42.6977" step="0.001" min="-90" max="90">
+        </div>
+        <div class="field">
+          <label>Disaster Longitude</label>
+          <input type="number" id="alert-lon" value="23.3219" step="0.001" min="-180" max="180">
+        </div>
+        <div class="field" style="flex:0 0 auto;align-self:flex-end;">
+          <button onclick="useGpsForAlert()" style="padding:8px 14px;background:var(--danger);border-color:var(--danger);color:#fff;white-space:nowrap;">My GPS</button>
+        </div>
+      </div>
+      <div class="control-row">
+        <div class="field">
           <label>Alert Title *</label>
           <input type="text" id="alert-title" placeholder="M6.5 Earthquake near Istanbul" value="M6.5 Earthquake — Test Alert">
         </div>
@@ -461,7 +474,7 @@
           <textarea id="alert-desc" rows="2" placeholder="Detailed description of the event..."></textarea>
         </div>
       </div>
-      <div style="font-size:11px;color:var(--muted);margin:8px 0 4px;">Alert location = Location fields above. Sends real email/SMS to all registered users in radius.</div>
+      <div style="font-size:11px;color:var(--muted);margin:8px 0 4px;">Sends real email/SMS to all registered users in radius. Use "My GPS" to set your current position.</div>
       <button onclick="createAlert()" style="margin-top:6px;width:100%;border-color:var(--danger);color:var(--danger);">🚨 Create Alert &amp; Notify Users</button>
       <div id="alert-result" style="font-size:12px;margin-top:8px;"></div>
     </div>
@@ -793,6 +806,17 @@ async function registerUser() {
   }
 }
 
+function useGpsForAlert() {
+  if (!navigator.geolocation) return alert('Geolocation not supported');
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      document.getElementById('alert-lat').value = pos.coords.latitude.toFixed(4);
+      document.getElementById('alert-lon').value = pos.coords.longitude.toFixed(4);
+    },
+    err => alert('Could not get location: ' + err.message)
+  );
+}
+
 async function createAlert() {
   const title = document.getElementById('alert-title').value.trim();
   if (!title) return alert('Alert title is required');
@@ -801,8 +825,8 @@ async function createAlert() {
   res.textContent = 'Creating alert & notifying users...';
   try {
     const { data, elapsed } = await apiCall('POST', '/sdk/alert', {
-      lat: getLat(),
-      lon: getLon(),
+      lat: parseFloat(document.getElementById('alert-lat').value),
+      lon: parseFloat(document.getElementById('alert-lon').value),
       type: document.getElementById('alert-type').value,
       severity: document.getElementById('alert-severity').value,
       title: title,

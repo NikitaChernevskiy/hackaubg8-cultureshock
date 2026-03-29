@@ -101,6 +101,16 @@ def get_notification_log(limit: int = 50) -> list[dict]:
     return list(reversed(_notification_log[-limit:]))
 
 
+def reset_all_data() -> dict:
+    """Clear all in-memory users and notification logs."""
+    from app.services.sdk_service import _users
+    count_users = len(_users)
+    count_logs = len(_notification_log)
+    _users.clear()
+    _notification_log.clear()
+    return {"cleared_users": count_users, "cleared_notifications": count_logs}
+
+
 def seed_demo_data() -> dict:
     """Populate admin panel with realistic demo data for presentations."""
     from datetime import timedelta
